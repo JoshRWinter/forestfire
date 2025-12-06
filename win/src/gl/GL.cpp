@@ -122,6 +122,7 @@ void load_gl_functions()
 
 	glShaderStorageBlockBinding = (decltype(glShaderStorageBlockBinding)) get_proc("glShaderStorageBlockBinding");
 	glGetProgramResourceIndex = (decltype(glGetProgramResourceIndex)) get_proc("glGetProgramResourceIndex");
+
 	glGetUniformBlockIndex = (decltype(glGetUniformBlockIndex)) get_proc("glGetUniformBlockIndex");
 	glUniformBlockBinding = (decltype(glUniformBlockBinding)) get_proc("glUniformBlockBinding");
 	glGetUniformLocation = (decltype(glGetUniformLocation)) get_proc("glGetUniformLocation");
@@ -137,6 +138,7 @@ void load_gl_functions()
 	glDrawElementsInstancedBaseInstance = (decltype(glDrawElementsInstancedBaseInstance)) get_proc("glDrawElementsInstancedBaseInstance");
 	glDrawElementsBaseVertex = (decltype(glDrawElementsBaseVertex)) get_proc("glDrawElementsBaseVertex");
 	glMultiDrawElementsIndirect = (decltype(glMultiDrawElementsIndirect)) get_proc("glMultiDrawElementsIndirect");
+	glDrawArraysInstanced = (decltype(glDrawArraysInstanced)) get_proc("glDrawArraysInstanced");
 
 #ifdef WINPLAT_WINDOWS
 	glTexImage3D = (decltype(glTexImage3D)) get_proc("glTexImage3D");

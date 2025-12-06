@@ -28,14 +28,27 @@ public:
 	void draw_text(const char *str, float x, float y);
 
 private:
-	win::GLProgram program;
-	int uniform_transform;
-	int uniform_color;
+	struct
+	{
+		win::GLProgram program;
+		int uniform_projection;
+
+		win::GLVertexArray vao;
+		win::GLBuffer vbo_verts;
+		win::GLBuffer vbo_float_instance;
+		win::GLBuffer vbo_int_instance;
+	} treemode;
+
+	struct
+	{
+		win::GLProgram program;
+		int uniform_transform;
+		int uniform_color;
+
+		win::GLVertexArray vao;
+	} debugmode;
 
 	glm::mat4 projection;
-
-	win::GLVertexArray vao;
-	win::GLBuffer vbo;
 
 	win::GLTextRenderer text_renderer;
 	win::GLFont font;
