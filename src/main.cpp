@@ -102,7 +102,8 @@ int main(int argc, char **argv)
 		display.process();
 
 		// make new trees!
-		for (int i = 0; i < 20; ++i)
+		const auto make_trees = trees.empty() ? 20'000 : 20;
+		for (int i = 0; i < make_trees; ++i)
 		{
 			trees.emplace_back(randomf(area.left, area.right),
 							   randomf(area.bottom, area.top),
@@ -116,7 +117,7 @@ int main(int argc, char **argv)
 			const float x = randomf(area.left, area.right);
 			const float y = randomf(area.bottom, area.top);
 
-			hzmap1.get_zone(x, y).temp = 100;
+			hzmap1.get_zone(x, y).temp = 1;
 		}
 
 		// process them trees!
@@ -135,8 +136,8 @@ int main(int argc, char **argv)
 			if (tree.burnt > 0.0f)
 			{
 				// burn baby burn
-				zone1.temp += 1; // heat up the zone
-				zone2.temp += 1; // heat up the zone
+				zone1.temp = std::min(1.0f, zone1.temp + Tree::zone_heat_rate); // heat up the zone
+				zone2.temp = std::min(1.0f, zone2.temp + Tree::zone_heat_rate); // heat up the zone
 
 				tree.burnt += Tree::burn_rate;
 				if (tree.burnt > 1.0)
@@ -167,44 +168,45 @@ int main(int argc, char **argv)
 
 		// cool off the heat zones!
 		for (auto &zone : hzmap1.zones)
-			zone.temp = std::max(zone.temp - 2.0f, 0.0f);
+			zone.temp = std::max(zone.temp - HeatZone::cool_rate, 0.0f);
 		for (auto &zone : hzmap2.zones)
-			zone.temp = std::max(zone.temp - 2.0f, 0.0f);
+			zone.temp = std::max(zone.temp - HeatZone::cool_rate, 0.0f);
 
 		renderer.draw(trees);
 
-#define SHOW_HEAT_ZONES
+		// #define SHOW_HEAT_ZONES
 
 #if !defined NDEBUG && defined SHOW_HEAT_ZONES
-		std::vector<DebugBlock> blocks;
-		const HeatZoneMap *maps[] = {&hzmap1, &hzmap2};
-		for (const auto *map : maps)
 		{
-			const float width = map->right - map->left;
-			const float height = map->top - map->bottom;
-			const float zone_width = width / map->horizontal_zones;
-			const float zone_height = height / map->vertical_zones;
-
-			int i = 0;
-			for (const auto &zone : map->zones)
+			std::vector<DebugBlock> blocks;
+			const HeatZoneMap *maps[] = {&hzmap1, &hzmap2};
+			for (const auto *map : maps)
 			{
-				int x = i % map->horizontal_zones;
-				int y = i / map->horizontal_zones;
+				const float width = map->right - map->left;
+				const float height = map->top - map->bottom;
+				const float zone_width = width / map->horizontal_zones;
+				const float zone_height = height / map->vertical_zones;
 
-				const float heat = std::min(zone.temp, 100.0f);
-				const win::Color color(heat / 100.0f, 0.0f, 0.3f, 0.6f);
-				const float shrink = 0.005f;
-				blocks.emplace_back(map->left + (x * zone_width) + shrink,
-									(map->bottom + (y * zone_height)) + shrink,
-									zone_width - (shrink * 2.0f),
-									zone_height - (shrink * 2.0f),
-									color);
+				int i = 0;
+				for (const auto &zone : map->zones)
+				{
+					int x = i % map->horizontal_zones;
+					int y = i / map->horizontal_zones;
 
-				++i;
+					const win::Color color(zone.temp, 0.0f, 0.3f, 0.2f);
+					const float shrink = 0.005f;
+					blocks.emplace_back(map->left + (x * zone_width) + shrink,
+										(map->bottom + (y * zone_height)) + shrink,
+										zone_width - (shrink * 2.0f),
+										zone_height - (shrink * 2.0f),
+										color);
+
+					++i;
+				}
 			}
-		}
 
-		renderer.draw(blocks);
+			renderer.draw(blocks);
+		}
 #endif
 
 		++fps_accum;
@@ -217,7 +219,7 @@ int main(int argc, char **argv)
 		}
 
 		snprintf(debug, sizeof(debug), "%d fps, %lu trees, %d dead trees\n", fps, trees.size(), dead_trees);
-		renderer.draw_text(debug, area.left + 0.1f, area.top - 0.1f);
+		renderer.draw_text(debug, area.left + 0.1f, area.top - 0.2f);
 
 		display.swap();
 	}

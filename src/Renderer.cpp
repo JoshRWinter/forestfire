@@ -21,6 +21,8 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const
 	: text_renderer(dims, area, font_texture_unit, true, font_ssbo, true)
 	, font(text_renderer.create_font(0.2f, roll["font/NotoSansMono-Regular.ttf"]))
 {
+	printf("%s\n%s\n", (const char *)glGetString(GL_VENDOR), (const char *)glGetString(GL_RENDERER));
+
 	projection = glm::ortho(area.left, area.right, area.bottom, area.top);
 
 	// Initialize tree mode

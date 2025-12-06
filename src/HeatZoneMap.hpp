@@ -4,10 +4,7 @@
 
 #include <win/Win.hpp>
 
-struct HeatZone
-{
-	float temp = 0.0f;
-};
+#include "Entities.hpp"
 
 class HeatZoneMap
 {

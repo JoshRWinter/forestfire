@@ -9,7 +9,8 @@ struct Tree
 	static constexpr float size_low = 0.01f;
 	static constexpr float size_high = 0.02f;
 
-	static constexpr float burn_rate = 0.01f;
+	static constexpr float burn_rate = 0.001f;
+	static constexpr float zone_heat_rate = 0.002f;
 
 	Tree(float x, float y, float w, float h)
 		: x(x)
@@ -25,6 +26,12 @@ struct Tree
 	float w, h;
 	float burnt = 0.0f;
 	bool dead = false;
+};
+
+struct HeatZone
+{
+	static constexpr float cool_rate = 0.01f;
+	float temp = 0.0f;
 };
 
 struct DebugBlock
