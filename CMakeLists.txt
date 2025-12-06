@@ -8,7 +8,10 @@ set(executable ForestFire)
 set(sources
 	src/main.cpp
 
-	src/Tree.hpp
+	src/Entities.hpp
+
+	src/HeatZoneMap.hpp
+	src/HeatZoneMap.cpp
 
 	src/Renderer.hpp
 	src/Renderer.cpp
