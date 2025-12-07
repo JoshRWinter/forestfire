@@ -14,6 +14,7 @@ uniform ivec2 strike;
 
 uniform sampler2D noise;
 uniform sampler2D trees;
+uniform sampler2D fire;
 
 const int strike_radius = 5;
 const float burn_rate = 0.01;
@@ -23,6 +24,7 @@ void main()
 {
 	bool newtree = texture(noise, noisetexcoord).r > 0.0;
 	vec2 existing_tree = texture(trees, ftexcoord).rg;
+	float existing_fire = texture(fire, ftexcoord).r;
 
 	bool exists = false;
 
@@ -32,9 +34,10 @@ void main()
 		exists = true;
 
 		bool lightning_strike = strike.x != -1 && abs(gl_FragCoord.x - strike.x) < strike_radius && abs(gl_FragCoord.y - strike.y) < strike_radius;
+		bool near_fire = existing_fire > 0.0;
 
 		// tree needs to burn
-		if (existing_tree.r > 0.0 || lightning_strike)
+		if (existing_tree.r > 0.0 || lightning_strike || near_fire)
 		{
 			existing_tree.r = min(1.0, existing_tree.r + burn_rate);
 		}

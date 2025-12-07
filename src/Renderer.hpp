@@ -20,6 +20,8 @@ class Renderer
 	static constexpr GLenum ff1_texture_unit = GL_TEXTURE2;
 	static constexpr GLenum ff2_texture_unit = GL_TEXTURE3;
 	static constexpr GLenum ffvisual_texture_unit = GL_TEXTURE4;
+	static constexpr GLenum fire_a_texture_unit = GL_TEXTURE5;
+	static constexpr GLenum fire_b_texture_unit = GL_TEXTURE6;
 
 public:
 	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const win::Area<float> &area);
@@ -47,6 +49,18 @@ private:
 
 		win::GLVertexArray vao;
 	} ffmode;
+
+	struct
+	{
+		win::GLFramebuffer fbo_a, fbo_b;
+		win::GLTexture tex_a, tex_b;
+
+		win::GLProgram program;
+		int uniform_tex;
+		int uniform_horizontal;
+
+		win::GLVertexArray vao;
+	} firemode;
 
 	struct
 	{

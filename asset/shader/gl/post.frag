@@ -14,5 +14,4 @@ void main()
 {
 	frag = texture(tex, ftexcoord);
 	frag = vec4(encode(frag.r), encode(frag.g), encode(frag.b), frag.a);
-
 }
