@@ -1,8 +1,6 @@
 #include <cmath>
-#include <type_traits>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <memory>
+#include <random>
 
 #include "Renderer.hpp"
 
@@ -18,137 +16,148 @@ GLint get_uniform(win::GLProgram &program, const char *name)
 }
 
 Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const win::Area<float> &area)
-	: text_renderer(dims, area, font_texture_unit, true, font_ssbo, true)
+	: mersenne(42'069)
+	, dims(dims)
+	, text_renderer(dims, area, font_texture_unit, true, font_ssbo, true)
 	, font(text_renderer.create_font(0.2f, roll["font/NotoSansMono-Regular.ttf"]))
 {
 	printf("%s\n%s\n", (const char *)glGetString(GL_VENDOR), (const char *)glGetString(GL_RENDERER));
 
-	projection = glm::ortho(area.left, area.right, area.bottom, area.top);
-
-	// Initialize tree mode
-	{
-		treemode.program = win::GLProgram(win::load_gl_shaders(roll["shader/gl/tree.vert"], roll["shader/gl/tree.frag"]));
-		glUseProgram(treemode.program.get());
-		treemode.uniform_projection = get_uniform(treemode.program, "projection");
-
-		glUniformMatrix4fv(treemode.uniform_projection, 1, GL_FALSE, glm::value_ptr(projection));
-
-		glBindVertexArray(treemode.vao.get());
-
-		glBindBuffer(GL_ARRAY_BUFFER, treemode.vbo_verts.get());
-
-		// clang-format off
-		const float verts[] =
-		{
-			-0.5f, 0.5f,
-			-0.5f, -0.5f,
-			0.5f, 0.5f,
-			0.5f, -0.5f
-		};
-		// clang-format on
-
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ARRAY_BUFFER, treemode.vbo_float_instance.get());
-
-		// layout will be { x, y, w, h }
-
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, NULL);
-		glVertexAttribDivisor(1, 1);
-
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void *)(sizeof(float) * 2));
-		glVertexAttribDivisor(2, 1);
-
-		glBindBuffer(GL_ARRAY_BUFFER, treemode.vbo_int_instance.get());
-
-		glEnableVertexAttribArray(3);
-		glVertexAttribIPointer(3, 1, GL_UNSIGNED_BYTE, 0, NULL);
-		glVertexAttribDivisor(3, 1);
-	}
-
-	// initialize debug mode
-	{
-		debugmode.program = win::GLProgram(win::load_gl_shaders(roll["shader/gl/debug.vert"], roll["shader/gl/debug.frag"]));
-		glUseProgram(debugmode.program.get());
-		debugmode.uniform_transform = get_uniform(debugmode.program, "transform");
-		debugmode.uniform_color = get_uniform(debugmode.program, "color");
-	}
-
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	// initialize tree mode
+	{
+		// initialize framebuffer nonsense
+		{
+			// visual texture
+			glActiveTexture(ffvisual_texture_unit);
+			glBindTexture(GL_TEXTURE_2D, ffmode.ffvisual.get());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, dims.width, dims.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+			const GLenum drawbuffers[] {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+			glBindFramebuffer(GL_FRAMEBUFFER, ffmode.fbo_ff1.get());
+
+			glActiveTexture(ff1_texture_unit);
+			glBindTexture(GL_TEXTURE_2D, ffmode.ff1.get());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, dims.width, dims.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ffmode.ff1.get(), 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, ffmode.ffvisual.get(), 0);
+			glDrawBuffers(2, drawbuffers);
+
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, ffmode.fbo_ff2.get());
+
+			glActiveTexture(ff2_texture_unit);
+			glBindTexture(GL_TEXTURE_2D, ffmode.ff2.get());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, dims.width, dims.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ffmode.ff2.get(), 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, ffmode.ffvisual.get(), 0);
+			glDrawBuffers(2, drawbuffers);
+
+			glClear(GL_COLOR_BUFFER_BIT);
+		}
+
+		ffmode.program = win::GLProgram(win::load_gl_shaders(roll["shader/gl/ff.vert"], roll["shader/gl/ff.frag"]));
+		glUseProgram(ffmode.program.get());
+		const auto uniform_noise = get_uniform(ffmode.program, "noise");
+		ffmode.uniform_tcshift = get_uniform(ffmode.program, "tcshift");
+		ffmode.uniform_trees = get_uniform(ffmode.program, "trees");
+		ffmode.uniform_strike = get_uniform(ffmode.program, "strike");
+
+		glUniform1i(uniform_noise, noise_texture_unit - GL_TEXTURE0);
+
+		// initialize noise texture
+		{
+			std::unique_ptr<unsigned char[]> data(new unsigned char[dims.width * dims.height]);
+			for (int i = 0; i < dims.width * dims.height; ++i)
+			{
+				data[i] = std::uniform_int_distribution<int>(0, 5000)(mersenne) == 0 ? 255 : 0;
+			}
+
+			glActiveTexture(noise_texture_unit);
+			glBindTexture(GL_TEXTURE_2D, ffmode.noise.get());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dims.width, dims.height, 0, GL_RED, GL_UNSIGNED_BYTE, data.get());
+		}
+	}
+
+	// initialize post mode
+	{
+		postmode.program = win::GLProgram(win::load_gl_shaders(roll["shader/gl/post.vert"], roll["shader/gl/post.frag"]));
+		glUseProgram(postmode.program.get());
+		const auto uniform_tex = get_uniform(postmode.program, "tex");
+		glUniform1i(uniform_tex, ffvisual_texture_unit - GL_TEXTURE0);
+	}
 
 	win::gl_check_error();
 }
 
-void Renderer::draw(const std::vector<Tree> &trees)
+void Renderer::draw()
 {
+	glBindFramebuffer(GL_FRAMEBUFFER, ffmode.pingpong ? ffmode.fbo_ff1.get() : ffmode.fbo_ff2.get());
+
+	glUseProgram(ffmode.program.get());
+	glUniform1i(ffmode.uniform_trees, (ffmode.pingpong ? ff2_texture_unit : ff1_texture_unit) - GL_TEXTURE0);
+	glBindVertexArray(ffmode.vao.get());
+
+	glUniform2f(ffmode.uniform_tcshift,
+				std::uniform_real_distribution<float>(-10.0f, 10.0f)(mersenne),
+				std::uniform_real_distribution<float>(-10.0f, 10.0f)(mersenne));
+
+	// lightning strike?
+	if (std::uniform_int_distribution<int>(0, 100)(mersenne) == 0 || true)
+	{
+		glUniform2i(ffmode.uniform_strike,
+					std::uniform_int_distribution<int>(0, dims.width)(mersenne),
+					std::uniform_int_distribution<int>(0, dims.height)(mersenne));
+	}
+	else
+	{
+		glUniform2i(ffmode.uniform_strike, -1, -1);
+	}
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glUseProgram(postmode.program.get());
+	glBindVertexArray(postmode.vao.get());
+
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glUseProgram(treemode.program.get());
-	glBindVertexArray(treemode.vao.get());
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	std::vector<float> fdata;
-	fdata.reserve(trees.size() * 4);
-
-	std::vector<unsigned char> idata;
-	idata.reserve(trees.size());
-
-	int count = 0;
-	for (const auto &tree : trees)
-	{
-		if (tree.dead)
-			continue;
-
-		fdata.push_back(tree.x);
-		fdata.push_back(tree.y);
-		fdata.push_back(tree.w);
-		fdata.push_back(tree.h);
-
-		idata.push_back(std::roundf(std::max(0.0f, std::min(1.0f, tree.burnt)) * std::numeric_limits<unsigned char>::max()));
-
-		++count;
-	}
-
-	glBindBuffer(GL_ARRAY_BUFFER, treemode.vbo_float_instance.get());
-	glBufferData(GL_ARRAY_BUFFER, fdata.size(), fdata.data(), GL_DYNAMIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, treemode.vbo_int_instance.get());
-	glBufferData(GL_ARRAY_BUFFER, idata.size(), idata.data(), GL_DYNAMIC_DRAW);
-
-	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
-
-	win::gl_check_error();
-}
-
-void Renderer::draw(const std::vector<DebugBlock> &blocks)
-{
-	glUseProgram(debugmode.program.get());
-	glBindVertexArray(debugmode.vao.get());
-
-	const auto ident = glm::identity<glm::mat4>();
-	for (const auto &block : blocks)
-	{
-		const auto translate = glm::translate(ident, glm::vec3(block.x + (block.w / 2.0f), block.y + (block.h / 2.0f), 0.0f));
-		const auto scale = glm::scale(ident, glm::vec3(block.w, block.h, 1.0f));
-		const auto transform = projection * translate * scale;
-
-		glUniformMatrix4fv(debugmode.uniform_transform, 1, GL_FALSE, glm::value_ptr(transform));
-
-		glUniform4f(debugmode.uniform_color, block.color.red, block.color.green, block.color.blue, block.color.alpha);
-
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	}
+	ffmode.pingpong = !ffmode.pingpong;
 
 	win::gl_check_error();
 }
 
 void Renderer::draw_text(const char *str, float x, float y)
 {
+	glEnable(GL_BLEND);
 	text_renderer.draw(font, str, x, y, false);
 	text_renderer.flush();
+	glDisable(GL_BLEND);
+
+	win::gl_check_error();
 }

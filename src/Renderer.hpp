@@ -1,8 +1,6 @@
 #pragma once
 
-#include <vector>
-
-#include <glm/glm.hpp>
+#include <random>
 
 #include <win/AssetRoll.hpp>
 #include <win/gl/GL.hpp>
@@ -11,8 +9,6 @@
 #include <win/Utility.hpp>
 #include <win/Win.hpp>
 
-#include "Entities.hpp"
-
 class Renderer
 {
 	WIN_NO_COPY_MOVE(Renderer);
@@ -20,35 +16,44 @@ class Renderer
 	static constexpr GLenum font_texture_unit = GL_TEXTURE0;
 	static constexpr GLuint font_ssbo = 0;
 
+	static constexpr GLenum noise_texture_unit = GL_TEXTURE1;
+	static constexpr GLenum ff1_texture_unit = GL_TEXTURE2;
+	static constexpr GLenum ff2_texture_unit = GL_TEXTURE3;
+	static constexpr GLenum ffvisual_texture_unit = GL_TEXTURE4;
+
 public:
 	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const win::Area<float> &area);
 
-	void draw(const std::vector<Tree> &trees);
-	void draw(const std::vector<DebugBlock> &blocks);
+	void draw();
 	void draw_text(const char *str, float x, float y);
 
 private:
-	struct
-	{
-		win::GLProgram program;
-		int uniform_projection;
+	std::mt19937 mersenne;
 
-		win::GLVertexArray vao;
-		win::GLBuffer vbo_verts;
-		win::GLBuffer vbo_float_instance;
-		win::GLBuffer vbo_int_instance;
-	} treemode;
+	win::Dimensions<int> dims;
 
 	struct
 	{
+		win::GLFramebuffer fbo_ff1, fbo_ff2;
+
+		win::GLTexture ff1, ff2, ffvisual;
+		win::GLTexture noise;
 		win::GLProgram program;
-		int uniform_transform;
-		int uniform_color;
+		int uniform_tcshift;
+		int uniform_trees;
+		int uniform_strike;
+
+		bool pingpong = true; // if true, draw to ff1, source from ff2
 
 		win::GLVertexArray vao;
-	} debugmode;
+	} ffmode;
 
-	glm::mat4 projection;
+	struct
+	{
+		win::GLProgram program;
+
+		win::GLVertexArray vao;
+	} postmode;
 
 	win::GLTextRenderer text_renderer;
 	win::GLFont font;

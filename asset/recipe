@@ -1,6 +1,6 @@
-shader/gl/tree.vert
-shader/gl/tree.frag
-shader/gl/debug.vert
-shader/gl/debug.frag
+shader/gl/ff.vert
+shader/gl/ff.frag
+shader/gl/post.vert
+shader/gl/post.frag
 
 font/NotoSansMono-Regular.ttf
