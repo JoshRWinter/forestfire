@@ -81,6 +81,7 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const
 		ffmode.uniform_trees = get_uniform(ffmode.program, "trees");
 		const auto uniform_fire = get_uniform(ffmode.program, "fire");
 		ffmode.uniform_strike = get_uniform(ffmode.program, "strike");
+		ffmode.uniform_time = get_uniform(ffmode.program, "time");
 
 		glUniform1i(uniform_noise, noise_texture_unit - GL_TEXTURE0);
 		glUniform1i(uniform_fire, fire_b_texture_unit - GL_TEXTURE0);
@@ -152,7 +153,7 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const
 	win::gl_check_error();
 }
 
-void Renderer::draw()
+void Renderer::draw(float time)
 {
 	// do tree simulation
 	{
@@ -177,6 +178,8 @@ void Renderer::draw()
 		{
 			glUniform2i(ffmode.uniform_strike, -1, -1);
 		}
+
+		glUniform1f(ffmode.uniform_time, time);
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}

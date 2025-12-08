@@ -37,7 +37,6 @@ int main(int argc, char **argv)
 	win::Display display(display_options);
 	display.vsync(true);
 	// display.cursor(false);
-	bool fullscreen = display_options.fullscreen;
 
 	win::load_gl_functions();
 
@@ -74,11 +73,14 @@ int main(int argc, char **argv)
 	int fps_accum = 0;
 	auto last_fps = std::chrono::high_resolution_clock::now();
 
+	const auto start = std::chrono::high_resolution_clock::now();
+
 	while (!quit)
 	{
 		display.process();
 
-		renderer.draw();
+		const auto time = std::fmodf(std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start).count() / 1000, 1.0);
+		renderer.draw(time);
 
 		++fps_accum;
 		const auto now = std::chrono::high_resolution_clock::now();

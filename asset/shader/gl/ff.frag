@@ -11,6 +11,7 @@ in vec2 noisetexcoord;
 in vec2 ftexcoord;
 
 uniform ivec2 strike;
+uniform float time;
 
 uniform sampler2D noise;
 uniform sampler2D trees;
@@ -74,6 +75,13 @@ void main()
 		tree_visual.g = 1.0 - tree_info.r;
 		tree_visual.b = 0.0f;
 
+		float twinkle_phase_shift = float(gl_FragCoord.x + gl_FragCoord.y);
+		float twinkle_freq = time * (tree_info.r > 0.0 ? 10000 : 1000);
+		float twinkle = abs(sin(twinkle_phase_shift + twinkle_freq));
+		twinkle = (twinkle * 0.85) + 0.15;
+		tree_visual = tree_visual.rgb * twinkle;
+
+		// fade effect
 		tree_visual = vec3(tree_visual.rgb * tree_info.g);
 	}
 	else

@@ -26,7 +26,7 @@ class Renderer
 public:
 	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const win::Area<float> &area);
 
-	void draw();
+	void draw(float time);
 	void draw_text(const char *str, float x, float y);
 
 private:
@@ -44,6 +44,7 @@ private:
 		int uniform_tcshift;
 		int uniform_trees;
 		int uniform_strike;
+		int uniform_time;
 
 		bool pingpong = true; // if true, draw to ff1, source from ff2
 
