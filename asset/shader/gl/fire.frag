@@ -6,7 +6,7 @@ in vec2 ftexcoord;
 uniform sampler2D tex;
 uniform bool horizontal;
 
-const int samples = 5;
+const int samples = 3;
 
 void main()
 {
