@@ -1,6 +1,5 @@
 #include <chrono>
 #include <random>
-#include <vector>
 
 #include <win/AssetRoll.hpp>
 #include <win/Display.hpp>
@@ -8,6 +7,7 @@
 #include <win/Utility.hpp>
 
 #include "Renderer.hpp"
+#include "SimulationSettings.hpp"
 
 #if defined WINPLAT_WINDOWS && NDEBUG
 int WinMain(HINSTANCE hinstance, HINSTANCE prev, PSTR cmd, int show)
@@ -68,19 +68,29 @@ int main(int argc, char **argv)
 	const auto area = win::Area(-8.0f, 8.0f, -4.5f, 4.5f);
 	Renderer renderer(roll, dims, area);
 
+	const auto start = std::chrono::high_resolution_clock::now();
+
+	// clang-format off
+	const SimulationSettings settings =
+	{
+		0.004f,
+		0.001f,
+		0.04f,
+		3
+	};
+	// clang-format on
+
 	char debug[100];
 	int fps = 0;
 	int fps_accum = 0;
 	auto last_fps = std::chrono::high_resolution_clock::now();
-
-	const auto start = std::chrono::high_resolution_clock::now();
 
 	while (!quit)
 	{
 		display.process();
 
 		const auto time = std::fmodf(std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start).count() / 1000, 1.0);
-		renderer.draw(time);
+		renderer.draw(settings, time);
 
 		++fps_accum;
 		const auto now = std::chrono::high_resolution_clock::now();

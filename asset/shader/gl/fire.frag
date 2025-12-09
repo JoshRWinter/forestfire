@@ -6,7 +6,7 @@ in vec2 ftexcoord;
 uniform sampler2D tex;
 uniform bool horizontal;
 
-const int samples = 3;
+uniform int burn_radius;
 
 void main()
 {
@@ -16,7 +16,7 @@ void main()
 	if (horizontal)
 	{
 		float shift = 1.0 / dims.x;
-		for (int i = 0; i < samples; ++i)
+		for (int i = 0; i < burn_radius; ++i)
 		{
 			vec4 search_left = texture(tex, vec2(ftexcoord.x + (shift * i), ftexcoord.y));
 			vec4 search_right = texture(tex, vec2(ftexcoord.x - (shift * i), ftexcoord.y));
@@ -27,7 +27,7 @@ void main()
 	else
 	{
 		float shift = 1.0 / dims.y;
-		for (int i = 0; i < samples; ++i)
+		for (int i = 0; i < burn_radius; ++i)
 		{
 			vec4 search_up = texture(tex, vec2(ftexcoord.x, ftexcoord.y + (shift * i)));
 			vec4 search_down = texture(tex, vec2(ftexcoord.x, ftexcoord.y - (shift * i)));

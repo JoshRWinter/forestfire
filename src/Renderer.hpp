@@ -9,6 +9,8 @@
 #include <win/Utility.hpp>
 #include <win/Win.hpp>
 
+#include "SimulationSettings.hpp"
+
 class Renderer
 {
 	WIN_NO_COPY_MOVE(Renderer);
@@ -26,7 +28,7 @@ class Renderer
 public:
 	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const win::Area<float> &area);
 
-	void draw(float time);
+	void draw(const SimulationSettings &settings, float time);
 	void draw_text(const char *str, float x, float y);
 
 private:
@@ -45,6 +47,9 @@ private:
 		int uniform_trees;
 		int uniform_strike;
 		int uniform_time;
+		int uniform_burn_rate;
+		int uniform_fade_out_rate;
+		int uniform_catch_fire_threshold;
 
 		bool pingpong = true; // if true, draw to ff1, source from ff2
 
@@ -59,6 +64,7 @@ private:
 		win::GLProgram program;
 		int uniform_tex;
 		int uniform_horizontal;
+		int uniform_burn_radius;
 
 		win::GLVertexArray vao;
 	} firemode;

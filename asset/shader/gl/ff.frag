@@ -18,9 +18,12 @@ uniform sampler2D trees;
 uniform sampler2D fire;
 
 const int strike_radius = 5;
-const float burn_rate = 0.004;
 const float fade_in_rate = 0.03;
-const float fade_out_rate = 0.001;
+
+// simulation settings
+uniform float burn_rate;
+uniform float fade_out_rate;
+uniform float catch_fire_threshold;
 
 void main()
 {
@@ -35,7 +38,7 @@ void main()
 	if (exists)
 	{
 		bool lightning_strike = strike.x != -1 && abs(gl_FragCoord.x - strike.x) < strike_radius && abs(gl_FragCoord.y - strike.y) < strike_radius;
-		bool near_burning_tree = existing_fire > 0.04;
+		bool near_burning_tree = existing_fire > catch_fire_threshold;
 
 		burning = burning || lightning_strike || near_burning_tree;
 

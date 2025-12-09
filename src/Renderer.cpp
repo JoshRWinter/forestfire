@@ -82,6 +82,9 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const
 		const auto uniform_fire = get_uniform(ffmode.program, "fire");
 		ffmode.uniform_strike = get_uniform(ffmode.program, "strike");
 		ffmode.uniform_time = get_uniform(ffmode.program, "time");
+		ffmode.uniform_burn_rate = get_uniform(ffmode.program, "burn_rate");
+		ffmode.uniform_fade_out_rate = get_uniform(ffmode.program, "fade_out_rate");
+		ffmode.uniform_catch_fire_threshold = get_uniform(ffmode.program, "catch_fire_threshold");
 
 		glUniform1i(uniform_noise, noise_texture_unit - GL_TEXTURE0);
 		glUniform1i(uniform_fire, fire_b_texture_unit - GL_TEXTURE0);
@@ -140,6 +143,7 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const
 		glUseProgram(firemode.program.get());
 		firemode.uniform_tex = get_uniform(firemode.program, "tex");
 		firemode.uniform_horizontal = get_uniform(firemode.program, "horizontal");
+		firemode.uniform_burn_radius = get_uniform(firemode.program, "burn_radius");
 	}
 
 	// initialize post mode
@@ -153,7 +157,7 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const
 	win::gl_check_error();
 }
 
-void Renderer::draw(float time)
+void Renderer::draw(const SimulationSettings &settings, float time)
 {
 	// do tree simulation
 	{
@@ -179,6 +183,10 @@ void Renderer::draw(float time)
 			glUniform2i(ffmode.uniform_strike, -1, -1);
 		}
 
+		glUniform1f(ffmode.uniform_burn_rate, settings.burn_rate);
+		glUniform1f(ffmode.uniform_fade_out_rate, settings.fade_out_rate);
+		glUniform1f(ffmode.uniform_catch_fire_threshold, settings.catch_fire_threshold);
+
 		glUniform1f(ffmode.uniform_time, time);
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -201,6 +209,7 @@ void Renderer::draw(float time)
 
 		glUniform1i(firemode.uniform_tex, fire_a_texture_unit - GL_TEXTURE0);
 		glUniform1i(firemode.uniform_horizontal, 0);
+		glUniform1i(firemode.uniform_burn_radius, settings.burn_radius);
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}

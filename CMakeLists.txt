@@ -10,6 +10,8 @@ set(sources
 
 	src/Renderer.hpp
 	src/Renderer.cpp
+
+	src/SimulationSettings.hpp
 )
 
 if (ROLLDATA)
