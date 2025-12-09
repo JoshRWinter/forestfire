@@ -80,9 +80,7 @@ int main(int argc, char **argv)
 	};
 	// clang-format on
 
-	char debug[100];
 	int fps = 0;
-	int fps_accum = 0;
 	auto last_fps = std::chrono::high_resolution_clock::now();
 
 	while (!quit)
@@ -92,17 +90,14 @@ int main(int argc, char **argv)
 		const auto time = std::fmodf(std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start).count() / 1000, 1.0);
 		renderer.draw(settings, time);
 
-		++fps_accum;
+		++fps;
 		const auto now = std::chrono::high_resolution_clock::now();
 		if (std::chrono::duration<float>(now - last_fps).count() > 1.0f)
 		{
-			fps = fps_accum;
-			fps_accum = 0;
+			printf("%d fps\n", fps);
+			fps = 0;
 			last_fps = now;
 		}
-
-		snprintf(debug, sizeof(debug), "%d fps", fps);
-		renderer.draw_text(debug, area.left + 0.1f, area.top - 0.2f);
 
 		display.swap();
 	}

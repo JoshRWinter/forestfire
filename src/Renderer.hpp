@@ -4,8 +4,6 @@
 
 #include <win/AssetRoll.hpp>
 #include <win/gl/GL.hpp>
-#include <win/gl/GLFont.hpp>
-#include <win/gl/GLTextRenderer.hpp>
 #include <win/Utility.hpp>
 #include <win/Win.hpp>
 
@@ -29,7 +27,6 @@ public:
 	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const win::Area<float> &area);
 
 	void draw(const SimulationSettings &settings, float time);
-	void draw_text(const char *str, float x, float y);
 
 private:
 	std::mt19937 mersenne;
@@ -75,7 +72,4 @@ private:
 
 		win::GLVertexArray vao;
 	} postmode;
-
-	win::GLTextRenderer text_renderer;
-	win::GLFont font;
 };

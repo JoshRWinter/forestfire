@@ -1,8 +1,6 @@
-shader/gl/ff.vert
-shader/gl/ff.frag
-shader/gl/fire.vert
-shader/gl/fire.frag
-shader/gl/post.vert
-shader/gl/post.frag
-
-font/NotoSansMono-Regular.ttf
+shader/gl/ff.vert z
+shader/gl/ff.frag z
+shader/gl/fire.vert z
+shader/gl/fire.frag z
+shader/gl/post.vert z
+shader/gl/post.frag z

@@ -18,14 +18,10 @@ GLint get_uniform(win::GLProgram &program, const char *name)
 Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const win::Area<float> &area)
 	: mersenne(42'069)
 	, dims(dims)
-	, text_renderer(dims, area, font_texture_unit, true, font_ssbo, true)
-	, font(text_renderer.create_font(0.2f, roll["font/NotoSansMono-Regular.ttf"]))
 {
 	printf("%s\n%s\n", (const char *)glGetString(GL_VENDOR), (const char *)glGetString(GL_RENDERER));
 
 	glClearColor(0.0, 0.0, 0.0, 1.0);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
 	// initialize forestfire mode
 	{
@@ -227,16 +223,6 @@ void Renderer::draw(const SimulationSettings &settings, float time)
 	}
 
 	ffmode.pingpong = !ffmode.pingpong;
-
-	win::gl_check_error();
-}
-
-void Renderer::draw_text(const char *str, float x, float y)
-{
-	glEnable(GL_BLEND);
-	text_renderer.draw(font, str, x, y, false);
-	text_renderer.flush();
-	glDisable(GL_BLEND);
 
 	win::gl_check_error();
 }
