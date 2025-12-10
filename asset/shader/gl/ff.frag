@@ -8,7 +8,6 @@ layout (location = 0) out vec2 tree_info;
 layout (location = 1) out vec3 tree_visual;
 
 in vec2 noisetexcoord;
-in vec2 ftexcoord;
 
 uniform ivec2 strike;
 uniform float time;
@@ -28,8 +27,8 @@ uniform float catch_fire_threshold;
 void main()
 {
 	bool newtree = texture(noise, noisetexcoord).r > 0.0;// make a new tree
-	vec2 existing_tree = texture(trees, ftexcoord).rg;
-	float existing_fire = texture(fire, ftexcoord).r;// is a tree burning nearby
+	vec2 existing_tree = texelFetch(trees, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).rg;
+	float existing_fire = texelFetch(fire, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).r;// is a tree burning nearby
 
 	bool exists = existing_tree.g > 0.0;// tree at this spot exists
 	bool burning = existing_tree.r > 0.0;// tree is currently on fire
@@ -97,4 +96,6 @@ void main()
 	{
 		tree_visual = vec3(0.0, 0.0, 0.0);
 	}
+
+	//tree_visual = vec3(existing_fire * 0.2 + tree_visual.r * 0.8, tree_visual.gb);
 }
