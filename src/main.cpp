@@ -37,12 +37,13 @@ int main(int argc, char **argv)
 	win::Display display(display_options);
 	display.vsync(true);
 	// display.cursor(false);
+	bool fullscreen = display_options.fullscreen;
 
 	win::load_gl_functions();
 
 	bool quit = false;
 	display.register_button_handler(
-		[&quit](win::Button button, bool press)
+		[&quit, &display, &fullscreen](win::Button button, bool press)
 		{
 			switch (button)
 			{
@@ -50,6 +51,12 @@ int main(int argc, char **argv)
 					if (press)
 						quit = true;
 					break;
+				case win::Button::f11:
+					if (press)
+					{
+						fullscreen = !fullscreen;
+						display.set_fullscreen(fullscreen);
+					}
 				default:
 					break;
 			}
@@ -64,9 +71,18 @@ int main(int argc, char **argv)
 
 	display.register_mouse_handler([](int x, int y) {});
 
-	const auto dims = win::Dimensions(display.width(), display.height());
+	auto dims = win::Dimensions(display.width(), display.height());
 	const auto area = win::Area(-8.0f, 8.0f, -4.5f, 4.5f);
 	Renderer renderer(roll, dims, area);
+
+	display.register_resize_handler(
+		[&renderer, &roll, &dims, &area](int w, int h)
+		{
+			dims.width = w;
+			dims.height = h;
+
+			renderer = std::move(Renderer(roll, dims, area));
+		});
 
 	const auto start = std::chrono::high_resolution_clock::now();
 

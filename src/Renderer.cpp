@@ -21,6 +21,10 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const
 {
 	printf("%s\n%s\n", (const char *)glGetString(GL_VENDOR), (const char *)glGetString(GL_RENDERER));
 
+	glViewport(0, 0, dims.width, dims.height);
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 
 	// initialize forestfire mode

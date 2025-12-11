@@ -11,7 +11,7 @@
 
 class Renderer
 {
-	WIN_NO_COPY_MOVE(Renderer);
+	WIN_NO_COPY(Renderer);
 
 	static constexpr GLenum font_texture_unit = GL_TEXTURE0;
 	static constexpr GLuint font_ssbo = 0;
@@ -25,6 +25,7 @@ class Renderer
 
 public:
 	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const win::Area<float> &area);
+	Renderer &operator=(Renderer &&) = default;
 
 	void draw(const SimulationSettings &settings, float time);
 
