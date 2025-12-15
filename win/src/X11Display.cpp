@@ -570,6 +570,9 @@ void X11Display::get_current_monitor_props(int &x, int &y, int &w, int &h, float
 
 				//fprintf(stderr, "Updated refresh rate (%.4f)\n", rr);
 
+				XRRFreeCrtcInfo(crtc);
+				XRRFreeOutputInfo(info);
+
 				break;
 			}
 			else
