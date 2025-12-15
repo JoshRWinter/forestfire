@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <random>
 
 #include <win/AssetRoll.hpp>
@@ -24,12 +25,15 @@ class Renderer
 	static constexpr GLenum fire_b_texture_unit = GL_TEXTURE6;
 
 public:
-	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const win::Area<float> &area);
+	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims);
 	Renderer &operator=(Renderer &&) = default;
 
+	void resize(const win::Dimensions<int> &dims);
 	void draw(const SimulationSettings &settings, float time);
 
 private:
+	std::unique_ptr<unsigned char[]> generate_treegen_noise();
+
 	std::mt19937 mersenne;
 
 	win::Dimensions<int> dims;

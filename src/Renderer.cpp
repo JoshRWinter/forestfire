@@ -1,5 +1,5 @@
 #include <cmath>
-#include <memory>
+#include <cstring>
 #include <random>
 
 #include "Renderer.hpp"
@@ -15,7 +15,7 @@ GLint get_uniform(win::GLProgram &program, const char *name)
 	return loc;
 }
 
-Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const win::Area<float> &area)
+Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 	: mersenne(42'069)
 	, dims(dims)
 {
@@ -24,6 +24,7 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const
 	glViewport(0, 0, dims.width, dims.height);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 
@@ -91,11 +92,7 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const
 
 		// initialize noise texture
 		{
-			std::unique_ptr<unsigned char[]> data(new unsigned char[dims.width * dims.height]);
-			for (int i = 0; i < dims.width * dims.height; ++i)
-			{
-				data[i] = std::uniform_int_distribution<int>(0, 50'000)(mersenne) == 0 ? 255 : 0;
-			}
+			const auto data = generate_treegen_noise();
 
 			glActiveTexture(noise_texture_unit);
 			glBindTexture(GL_TEXTURE_2D, ffmode.noise.get());
@@ -153,6 +150,70 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims, const
 		const auto uniform_tex = get_uniform(postmode.program, "tex");
 		glUniform1i(uniform_tex, ffvisual_texture_unit - GL_TEXTURE0);
 	}
+
+	win::gl_check_error();
+}
+
+void Renderer::resize(const win::Dimensions<int> &dims)
+{
+	const auto olddims = this->dims;
+	this->dims = dims;
+
+	const auto data = generate_treegen_noise();
+	glActiveTexture(noise_texture_unit);
+	glBindTexture(GL_TEXTURE_2D, ffmode.noise.get());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dims.width, dims.height, 0, GL_RED, GL_UNSIGNED_BYTE, data.get());
+
+	{
+		glActiveTexture(ff1_texture_unit);
+		glBindTexture(GL_TEXTURE_2D, ffmode.ff1.get());
+
+		const std::unique_ptr<float[]> olddata(new float[olddims.width * olddims.height * 2]);
+		glFlush();
+		glFinish();
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, olddata.get());
+
+		std::unique_ptr<float[]> newdata(new float[dims.width * dims.height * 2]);
+		for (int i = 0; i < dims.width * dims.height * 2; ++i)
+			newdata[i] = 0.0f;
+
+		for (int x = 0; x < std::min(olddims.width, dims.width); ++x)
+		{
+			for (int y = 0; y < std::min(olddims.height, dims.height); ++y)
+			{
+				const auto oldindex = y * olddims.width + x;
+				const auto newindex = y * dims.width + x;
+				newdata[newindex * 2] = olddata[oldindex * 2];
+				newdata[newindex * 2 + 1] = olddata[oldindex * 2 + 1];
+			}
+		}
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, dims.width, dims.height, 0, GL_RG, GL_FLOAT, newdata.get());
+
+		glActiveTexture(ff2_texture_unit);
+		glBindTexture(GL_TEXTURE_2D, ffmode.ff2.get());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, dims.width, dims.height, 0, GL_RG, GL_FLOAT, newdata.get());
+	}
+
+	glActiveTexture(ffvisual_texture_unit);
+	glBindTexture(GL_TEXTURE_2D, ffmode.ffvisual.get());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, dims.width, dims.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+	// resize fire textures
+	{
+		std::unique_ptr<unsigned char[]> black1i(new unsigned char[dims.width * dims.height * 3]);
+		memset(black1i.get(), 0, sizeof(black1i));
+
+		glActiveTexture(fire_a_texture_unit);
+		glBindTexture(GL_TEXTURE_2D, firemode.tex_a.get());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dims.width, dims.height, 0, GL_RED, GL_UNSIGNED_BYTE, black1i.get());
+
+		glActiveTexture(fire_b_texture_unit);
+		glBindTexture(GL_TEXTURE_2D, firemode.tex_b.get());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dims.width, dims.height, 0, GL_RED, GL_UNSIGNED_BYTE, black1i.get());
+	}
+
+	glViewport(0, 0, dims.width, dims.height);
 
 	win::gl_check_error();
 }
@@ -229,4 +290,15 @@ void Renderer::draw(const SimulationSettings &settings, float time)
 	ffmode.pingpong = !ffmode.pingpong;
 
 	win::gl_check_error();
+}
+
+std::unique_ptr<unsigned char[]> Renderer::generate_treegen_noise()
+{
+	std::unique_ptr<unsigned char[]> data(new unsigned char[dims.width * dims.height]);
+	for (int i = 0; i < dims.width * dims.height; ++i)
+	{
+		data[i] = std::uniform_int_distribution<int>(0, 50'000)(mersenne) == 0 ? 255 : 0;
+	}
+
+	return data;
 }

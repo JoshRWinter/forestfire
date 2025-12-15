@@ -72,16 +72,15 @@ int main(int argc, char **argv)
 	display.register_mouse_handler([](int x, int y) {});
 
 	auto dims = win::Dimensions(display.width(), display.height());
-	const auto area = win::Area(-8.0f, 8.0f, -4.5f, 4.5f);
-	Renderer renderer(roll, dims, area);
+	Renderer renderer(roll, dims);
 
 	display.register_resize_handler(
-		[&renderer, &roll, &dims, &area](int w, int h)
+		[&renderer, &dims](int w, int h)
 		{
 			dims.width = w;
 			dims.height = h;
 
-			renderer = std::move(Renderer(roll, dims, area));
+			renderer.resize(dims);
 		});
 
 	const auto start = std::chrono::high_resolution_clock::now();
