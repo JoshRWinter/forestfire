@@ -183,6 +183,7 @@ void Renderer::resize(const win::Dimensions<int> &dims)
 			{
 				const auto oldindex = y * olddims.width + x;
 				const auto newindex = y * dims.width + x;
+
 				newdata[newindex * 2] = olddata[oldindex * 2];
 				newdata[newindex * 2 + 1] = olddata[oldindex * 2 + 1];
 			}
@@ -201,16 +202,17 @@ void Renderer::resize(const win::Dimensions<int> &dims)
 
 	// resize fire textures
 	{
-		std::unique_ptr<unsigned char[]> black1i(new unsigned char[dims.width * dims.height * 3]);
-		memset(black1i.get(), 0, sizeof(black1i));
-
 		glActiveTexture(fire_a_texture_unit);
 		glBindTexture(GL_TEXTURE_2D, firemode.tex_a.get());
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dims.width, dims.height, 0, GL_RED, GL_UNSIGNED_BYTE, black1i.get());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dims.width, dims.height, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+		glBindFramebuffer(GL_FRAMEBUFFER, firemode.fbo_a.get());
+		glClear(GL_COLOR_BUFFER_BIT);
 
 		glActiveTexture(fire_b_texture_unit);
 		glBindTexture(GL_TEXTURE_2D, firemode.tex_b.get());
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dims.width, dims.height, 0, GL_RED, GL_UNSIGNED_BYTE, black1i.get());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, dims.width, dims.height, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+		glBindFramebuffer(GL_FRAMEBUFFER, firemode.fbo_b.get());
+		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
 	glViewport(0, 0, dims.width, dims.height);
