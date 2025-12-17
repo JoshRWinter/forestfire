@@ -4,12 +4,18 @@
 // .r = burn
 // .g = if r less than one, then g is age (fade-in), otherwise g is dying (fade-out)
 
-layout (location = 0) out vec3 tree_info;
+layout (std140) uniform colordata
+{
+	vec4 colors[6];
+};
+
+layout (location = 0) out vec4 tree_info;
 layout (location = 1) out vec3 tree_visual;
 
 in vec2 noisetexcoord;
 
 uniform ivec2 strike;
+uniform float strike_color;
 uniform float time;
 
 uniform sampler2D noise;
@@ -24,11 +30,24 @@ uniform float burn_rate;
 uniform float fade_out_rate;
 uniform float catch_fire_threshold;
 
+vec3 get_color(float index)
+{
+	float color_a = floor(index);
+	float color_b = ceil(index);
+	color_b = color_b <= 5 ? color_b : 0;
+
+	float progression = index - color_a;
+
+	vec3 color = mix(colors[int(color_a)], colors[int(color_b)], progression).rgb;
+
+	return color;
+}
+
 void main()
 {
 	bool newtree = texture(noise, noisetexcoord).r > 0.0;// make a new tree
-	vec3 existing_tree = texelFetch(trees, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).rgb;
-	float existing_fire = texelFetch(fire, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).r;// is a tree burning nearby
+	vec4 existing_tree = texelFetch(trees, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
+	vec2 existing_fire = texelFetch(fire, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).rg;// is a tree burning nearby
 
 	bool exists = existing_tree.g > 0.0;// tree at this spot exists
 	bool burning = existing_tree.r > 0.0;// tree is currently on fire
@@ -37,7 +56,17 @@ void main()
 	if (exists)
 	{
 		bool lightning_strike = strike.x != -1 && abs(gl_FragCoord.x - strike.x) < strike_radius && abs(gl_FragCoord.y - strike.y) < strike_radius;
-		bool near_burning_tree = existing_fire > catch_fire_threshold;
+		bool near_burning_tree = existing_fire.r > catch_fire_threshold;
+
+		if (lightning_strike)
+		{
+			existing_tree.a = mod(strike_color, 6);
+		}
+
+		if (near_burning_tree)
+		{
+			existing_tree.a = existing_fire.g;
+		}
 
 		burning = burning || lightning_strike || near_burning_tree;
 
@@ -59,26 +88,28 @@ void main()
 
 		tree_info = existing_tree;
 	}
-	else if (newtree && existing_fire == 0.0)
+	else if (newtree && existing_fire.r == 0.0)
 	{
 		// no tree at this spot, but we can plant one
 		exists = true;
-		tree_info = vec3(0.0, fade_in_rate, 0.0);
+		float color_index = mod(time, 6);
+		tree_info = vec4(0.0, fade_in_rate, color_index * 4, 0.0);
 	}
 	else
 	{
 		// no tree at this spot
 		exists = false;
-		tree_info = vec3(0.0, 0.0, 0.0);
+		tree_info = vec4(0.0, 0.0, 0.0, 0.0);
 	}
 
 	if (exists)
 	{
-		float fire_variation = sin(gl_FragCoord.x + gl_FragCoord.y) * (burning ? 0.1 : 0.0);
+		vec3 color = get_color(tree_info.b);
+		vec3 firecolor = get_color(tree_info.a);
 
-		tree_visual.r = (tree_info.r * 0.9) + fire_variation;
-		tree_visual.g = (1.0 - (tree_info.r * 0.8)) + fire_variation;
-		tree_visual.b = 0.0f;
+		tree_visual.r = (color.r * (1.0 - tree_info.r)) + (firecolor.r * tree_info.r);
+		tree_visual.g = (color.g * (1.0 - tree_info.r)) + (firecolor.g * tree_info.r);
+		tree_visual.b = (color.b * (1.0 - tree_info.r)) + (firecolor.b * tree_info.r);
 
 		float twinkle_phase_shift = float(gl_FragCoord.x + gl_FragCoord.y);
 		float twinkle_freq = time * (burning ? 3000 : 1000);

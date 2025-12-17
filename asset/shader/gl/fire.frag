@@ -1,6 +1,6 @@
 #version 460 core
 
-layout (location = 0) out float frag;
+layout (location = 0) out vec2 frag;
 
 uniform sampler2D tex;
 uniform bool horizontal;
@@ -9,30 +9,35 @@ uniform int burn_radius;
 
 void main()
 {
-	float maximum = texelFetch(tex, ivec2(gl_FragCoord.xy), 0).r;
 
 	if (horizontal)
 	{
+		vec2 maximum = texelFetch(tex, ivec2(gl_FragCoord.xy), 0).ra;
+
 		for (int i = 1; i < burn_radius; ++i)
 		{
-			float search_left = texelFetch(tex, ivec2(gl_FragCoord.x + i, gl_FragCoord.y), 0).r;
-			float search_right = texelFetch(tex, ivec2(gl_FragCoord.x - i, gl_FragCoord.y), 0).r;
+			vec2 search_left = texelFetch(tex, ivec2(gl_FragCoord.x + i, gl_FragCoord.y), 0).ra;
+			vec2 search_right = texelFetch(tex, ivec2(gl_FragCoord.x - i, gl_FragCoord.y), 0).ra;
 
-			maximum = max(maximum, search_left);
-			maximum = max(maximum, search_right);
+			maximum = search_left.r > maximum.r ? search_left : maximum;
+			maximum = search_right.r > maximum.r ? search_right : maximum;
 		}
+
+		frag = maximum;
 	}
 	else
 	{
+		vec2 maximum = texelFetch(tex, ivec2(gl_FragCoord.xy), 0).rg;
+
 		for (int i = 1; i < burn_radius; ++i)
 		{
-			float search_up = texelFetch(tex, ivec2(gl_FragCoord.x, gl_FragCoord.y + i), 0).r;
-			float search_down = texelFetch(tex, ivec2(gl_FragCoord.x, gl_FragCoord.y - i), 0).r;
+			vec2 search_up = texelFetch(tex, ivec2(gl_FragCoord.x, gl_FragCoord.y + i), 0).rg;
+			vec2 search_down = texelFetch(tex, ivec2(gl_FragCoord.x, gl_FragCoord.y - i), 0).rg;
 
-			maximum = max(maximum, search_up);
-			maximum = max(maximum, search_down);
+			maximum = search_up.r > maximum.r ? search_up : maximum;
+			maximum = search_down.r > maximum.r ? search_down : maximum;
 		}
-	}
 
-	frag = maximum;
+		frag = maximum;
+	}
 }

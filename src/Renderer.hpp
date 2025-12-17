@@ -24,6 +24,8 @@ class Renderer
 	static constexpr GLenum fire_a_texture_unit = GL_TEXTURE5;
 	static constexpr GLenum fire_b_texture_unit = GL_TEXTURE6;
 
+	static constexpr GLuint color_block_index = 0;
+
 public:
 	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims);
 	Renderer &operator=(Renderer &&) = default;
@@ -48,6 +50,7 @@ private:
 		int uniform_tcshift;
 		int uniform_trees;
 		int uniform_strike;
+		int uniform_strike_color;
 		int uniform_time;
 		int uniform_burn_rate;
 		int uniform_fade_out_rate;
@@ -56,6 +59,7 @@ private:
 		bool pingpong = true; // if true, draw to ff1, source from ff2
 
 		win::GLVertexArray vao;
+		win::GLBuffer colors;
 	} ffmode;
 
 	struct
