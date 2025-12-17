@@ -4,7 +4,7 @@
 // .r = burn
 // .g = if r less than one, then g is age (fade-in), otherwise g is dying (fade-out)
 
-layout (location = 0) out vec2 tree_info;
+layout (location = 0) out vec3 tree_info;
 layout (location = 1) out vec3 tree_visual;
 
 in vec2 noisetexcoord;
@@ -27,7 +27,7 @@ uniform float catch_fire_threshold;
 void main()
 {
 	bool newtree = texture(noise, noisetexcoord).r > 0.0;// make a new tree
-	vec2 existing_tree = texelFetch(trees, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).rg;
+	vec3 existing_tree = texelFetch(trees, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).rgb;
 	float existing_fire = texelFetch(fire, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).r;// is a tree burning nearby
 
 	bool exists = existing_tree.g > 0.0;// tree at this spot exists
@@ -57,19 +57,19 @@ void main()
 			existing_tree.g = 0.0;
 		}
 
-		tree_info = existing_tree.rg;
+		tree_info = existing_tree;
 	}
 	else if (newtree && existing_fire == 0.0)
 	{
 		// no tree at this spot, but we can plant one
 		exists = true;
-		tree_info = vec2(0.0, fade_in_rate);
+		tree_info = vec3(0.0, fade_in_rate, 0.0);
 	}
 	else
 	{
 		// no tree at this spot
 		exists = false;
-		tree_info = vec2(0.0, 0.0);
+		tree_info = vec3(0.0, 0.0, 0.0);
 	}
 
 	if (exists)

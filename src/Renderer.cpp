@@ -50,7 +50,7 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, dims.width, dims.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, dims.width, dims.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ffmode.ff1.get(), 0);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, ffmode.ffvisual.get(), 0);
@@ -66,7 +66,7 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, dims.width, dims.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, dims.width, dims.height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ffmode.ff2.get(), 0);
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, ffmode.ffvisual.get(), 0);
@@ -168,13 +168,13 @@ void Renderer::resize(const win::Dimensions<int> &dims)
 		glActiveTexture(ff1_texture_unit);
 		glBindTexture(GL_TEXTURE_2D, ffmode.ff1.get());
 
-		const std::unique_ptr<float[]> olddata(new float[olddims.width * olddims.height * 2]);
+		const std::unique_ptr<float[]> olddata(new float[olddims.width * olddims.height * 3]);
 		glFlush();
 		glFinish();
-		glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_FLOAT, olddata.get());
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, olddata.get());
 
-		std::unique_ptr<float[]> newdata(new float[dims.width * dims.height * 2]);
-		for (int i = 0; i < dims.width * dims.height * 2; ++i)
+		std::unique_ptr<float[]> newdata(new float[dims.width * dims.height * 3]);
+		for (int i = 0; i < dims.width * dims.height * 3; ++i)
 			newdata[i] = 0.0f;
 
 		for (int x = 0; x < std::min(olddims.width, dims.width); ++x)
@@ -184,16 +184,17 @@ void Renderer::resize(const win::Dimensions<int> &dims)
 				const auto oldindex = y * olddims.width + x;
 				const auto newindex = y * dims.width + x;
 
-				newdata[newindex * 2] = olddata[oldindex * 2];
-				newdata[newindex * 2 + 1] = olddata[oldindex * 2 + 1];
+				newdata[newindex * 3] = olddata[oldindex * 3];
+				newdata[newindex * 3 + 1] = olddata[oldindex * 3 + 1];
+				newdata[newindex * 3 + 2] = olddata[oldindex * 3 + 2];
 			}
 		}
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, dims.width, dims.height, 0, GL_RG, GL_FLOAT, newdata.get());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, dims.width, dims.height, 0, GL_RGB, GL_FLOAT, newdata.get());
 
 		glActiveTexture(ff2_texture_unit);
 		glBindTexture(GL_TEXTURE_2D, ffmode.ff2.get());
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, dims.width, dims.height, 0, GL_RG, GL_FLOAT, newdata.get());
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, dims.width, dims.height, 0, GL_RGB, GL_FLOAT, newdata.get());
 	}
 
 	glActiveTexture(ffvisual_texture_unit);
