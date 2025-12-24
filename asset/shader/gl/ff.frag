@@ -64,12 +64,12 @@ vec3 get_color(float index)
 void main()
 {
 	bool newtree = texture(noise, noisetexcoord).r > 0.0;// make a new tree
-	vec3 existing_tree = texelFetch(trees, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).rgb;
+	tree_info = texelFetch(trees, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).rgb;
 	vec2 existing_fire = texelFetch(fire, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).rg;// is a tree burning nearby
 
-	bool exists = existing_tree.g > 0.0;// tree at this spot exists
-	bool burning = existing_tree.r > 0.0;// tree is currently on fire
-	bool burnt_up = existing_tree.r == 1.0;// tree is all burnt up
+	bool exists = tree_info.g > 0.0;// tree at this spot exists
+	bool burning = tree_info.r > 0.0;// tree is currently on fire
+	bool burnt_up = tree_info.r == 1.0;// tree is all burnt up
 
 	if (exists)
 	{
@@ -78,51 +78,48 @@ void main()
 
 		if (lightning_strike)
 		{
-			existing_tree.b = strike_color;
+			tree_info.b = strike_color;
 		}
 		else if (near_burning_tree)
 		{
-			existing_tree.b = existing_fire.g;
+			tree_info.b = existing_fire.g;
 		}
 
 		burning = burning || lightning_strike || near_burning_tree;
 
 		if (burning)
 		{
-			existing_tree.r = min(1.0, existing_tree.r + burn_rate);
+			tree_info.r = min(1.0, tree_info.r + burn_rate);
 		}
 
-		existing_tree.g += burnt_up ? -fade_out_rate : fade_in_rate;
-		existing_tree.g = min(1.0, max(0.0, existing_tree.g));
+		tree_info.g += burnt_up ? -fade_out_rate : fade_in_rate;
+		tree_info.g = min(1.0, max(0.0, tree_info.g));
 
 		// delete
-		if (existing_tree.g == 0.0)
+		if (tree_info.g == 0.0)
 		{
 			exists = false;
-			existing_tree.r = 0.0;
-			existing_tree.g = 0.0;
+			tree_info.r = 0.0;
+			tree_info.g = 0.0;
 		}
-
-		tree_info = existing_tree;
 	}
 	else if (newtree && existing_fire.r == 0.0)
 	{
 		// no tree at this spot, but we can plant one
 		exists = true;
-		tree_info = vec3(0.0, fade_in_rate, 0.0);
+		tree_info.g = fade_in_rate;
 	}
 	else
 	{
 		// no tree at this spot
 		exists = false;
-		tree_info = vec3(0.0, 0.0, 0.0);
 	}
 
 	if (exists)
 	{
 		// figure out tree color
 		float color_deviate = (sin(gl_FragCoord.x + gl_FragCoord.y) + 1) * 0.1;
-		vec3 color = get_color(time * 100 + color_deviate);
+		vec3 color = get_color(time * 10 + color_deviate);
 		vec3 firecolor = get_fire_color(int(tree_info.b));
 
 		// blend the tree color with the fire color
