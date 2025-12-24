@@ -57,6 +57,9 @@ int main(int argc, char **argv)
 						fullscreen = !fullscreen;
 						display.set_fullscreen(fullscreen);
 					}
+				case win::Button::space:
+					display.vsync(!press);
+					break;
 				default:
 					break;
 			}
