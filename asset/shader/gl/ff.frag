@@ -9,9 +9,16 @@
 // .r [0.0, 1.0] fire intensitiy
 // .g fire color (integer index)
 
-layout (std140) uniform colordata
+uniform int color_data_len;
+layout (std430) buffer color_data
 {
-	vec4 colors[6];
+	vec4 colors[];
+};
+
+uniform int fire_color_data_len;
+layout (std430) buffer fire_color_data
+{
+	vec4 fire_colors[];
 };
 
 layout (location = 0) out vec3 tree_info;
@@ -35,20 +42,20 @@ uniform float burn_rate;
 uniform float fade_out_rate;
 uniform float catch_fire_threshold;
 
-vec3 get_color(int index)
+vec3 get_fire_color(int index)
 {
-	index = index % 6;
-	return colors[index].rgb;
+	index = index % fire_color_data_len;
+	return fire_colors[index].rgb;
 }
 
 vec3 get_color(float index)
 {
-	index = mod(index, 6);
+	index = mod(index, color_data_len);
 
 	int color_a = int(floor(index));
 	int color_b = int(ceil(index));
 
-	color_b = color_b <= 5 ? color_b : 0;// loop it
+	color_b = color_b <= color_data_len - 1 ? color_b : 0;// loop it
 
 	float progression = index - color_a;
 	return mix(colors[int(color_a)], colors[int(color_b)], progression).rgb;
@@ -71,7 +78,7 @@ void main()
 
 		if (lightning_strike)
 		{
-			existing_tree.b = mod(strike_color, 6);
+			existing_tree.b = strike_color;
 		}
 		else if (near_burning_tree)
 		{
@@ -116,7 +123,7 @@ void main()
 		// figure out tree color
 		float color_deviate = (sin(gl_FragCoord.x + gl_FragCoord.y) + 1) * 0.1;
 		vec3 color = get_color(time * 100 + color_deviate);
-		vec3 firecolor = get_color(int(tree_info.b));
+		vec3 firecolor = get_fire_color(int(tree_info.b));
 
 		// blend the tree color with the fire color
 		tree_visual.r = (color.r * (1.0 - tree_info.r)) + (firecolor.r * tree_info.r);

@@ -1,5 +1,4 @@
 #include <cmath>
-#include <cstring>
 #include <random>
 
 #include "Renderer.hpp"
@@ -106,26 +105,53 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 
 		// set up colors
 		{
-			// clang-format off
-			const float colors[] =
+			// tree colors
 			{
-				1.0f, 0.0f, 0.0f, 0.0f,
-				0.0f, 1.0f, 0.0f, 0.0f,
-				0.0f, 0.0f, 1.0f, 0.0f,
-				1.0f, 1.0f, 0.0f, 0.0f,
-				1.0f, 0.0f, 1.0f, 0.0f,
-				0.0f, 1.0f, 1.0f, 0.0f
-			};
-			// clang-format on
+				// clang-format off
+				const float colors[] =
+				{
+					1.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 1.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f, 0.0f,
+					1.0f, 1.0f, 0.0f, 0.0f,
+					1.0f, 0.0f, 1.0f, 0.0f,
+					0.0f, 1.0f, 1.0f, 0.0f
+				};
+				// clang-format on
 
-			const auto i = glGetUniformBlockIndex(ffmode.program.get(), "colordata");
-			if (i == GL_INVALID_INDEX)
-				win::bug("no uniform colordata");
+				glUniform1i(get_uniform(ffmode.program, "color_data_len"), 6);
 
-			glUniformBlockBinding(ffmode.program.get(), i, color_block_index);
-			glBindBuffer(GL_UNIFORM_BUFFER, ffmode.colors.get());
-			glBindBufferBase(GL_UNIFORM_BUFFER, color_block_index, ffmode.colors.get());
-			glBufferData(GL_UNIFORM_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+				const auto i = glGetProgramResourceIndex(ffmode.program.get(), GL_SHADER_STORAGE_BLOCK, "color_data");
+				if (i == GL_INVALID_INDEX)
+					win::bug("no buffer color_data");
+
+				glShaderStorageBlockBinding(ffmode.program.get(), i, color_shader_storage_block_index);
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, ffmode.colors.get());
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, color_shader_storage_block_index, ffmode.colors.get());
+				glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+			}
+
+			// fire colors
+			{
+				// clang-format off
+				const float colors[] =
+				{
+					1.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 1.0f, 0.0f, 0.0f
+				};
+				// clang-format on
+
+				glUniform1i(get_uniform(ffmode.program, "fire_color_data_len"), 2);
+
+				const auto i = glGetProgramResourceIndex(ffmode.program.get(), GL_SHADER_STORAGE_BLOCK, "fire_color_data");
+				if (i == GL_INVALID_INDEX)
+					win::bug("no buffer fire_color_data");
+
+				glShaderStorageBlockBinding(ffmode.program.get(), i, fire_color_shader_storage_block_index);
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, ffmode.firecolors.get());
+				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, fire_color_shader_storage_block_index, ffmode.firecolors.get());
+				glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+			}
 		}
 	}
 
@@ -263,7 +289,7 @@ void Renderer::draw(const SimulationSettings &settings, float time)
 		// lightning strike?
 		if (std::uniform_int_distribution<int>(0, 200)(mersenne) == 0) // || true)
 		{
-			glUniform1i(ffmode.uniform_strike_color, std::uniform_int_distribution<int>(0, 5)(mersenne));
+			glUniform1i(ffmode.uniform_strike_color, std::uniform_int_distribution<int>(0, 1)(mersenne));
 			glUniform2i(ffmode.uniform_strike,
 						std::uniform_int_distribution<int>(0, dims.width)(mersenne),
 						std::uniform_int_distribution<int>(0, dims.height)(mersenne));

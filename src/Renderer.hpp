@@ -24,7 +24,8 @@ class Renderer
 	static constexpr GLenum fire_a_texture_unit = GL_TEXTURE5;
 	static constexpr GLenum fire_b_texture_unit = GL_TEXTURE6;
 
-	static constexpr GLuint color_block_index = 0;
+	static constexpr GLuint color_shader_storage_block_index = 0;
+	static constexpr GLuint fire_color_shader_storage_block_index = 1;
 
 public:
 	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims);
@@ -60,6 +61,7 @@ private:
 
 		win::GLVertexArray vao;
 		win::GLBuffer colors;
+		win::GLBuffer firecolors;
 	} ffmode;
 
 	struct
