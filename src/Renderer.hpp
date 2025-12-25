@@ -32,7 +32,8 @@ public:
 	Renderer &operator=(Renderer &&) = default;
 
 	void resize(const win::Dimensions<int> &dims);
-	void draw(const SimulationSettings &settings, float time);
+	void draw(float time);
+	void set_settings(const SimulationSettings &settings);
 
 private:
 	std::unique_ptr<unsigned char[]> generate_treegen_noise();
@@ -40,6 +41,8 @@ private:
 	std::mt19937 mersenne;
 
 	win::Dimensions<int> dims;
+
+	SimulationSettings settings;
 
 	struct
 	{
@@ -56,6 +59,8 @@ private:
 		int uniform_burn_rate;
 		int uniform_fade_out_rate;
 		int uniform_catch_fire_threshold;
+		int uniform_color_data_len;
+		int uniform_fire_color_data_len;
 
 		bool pingpong = true; // if true, draw to ff1, source from ff2
 

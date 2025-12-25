@@ -57,7 +57,7 @@ vec3 get_color(int index)
 
 vec3 deviate_color(vec3 color)
 {
-	float shift = sin(gl_FragCoord.x + gl_FragCoord.y) * 0.2;
+	float shift = sin(gl_FragCoord.x + gl_FragCoord.y) * 0.1;
 	float negate = cos(gl_FragCoord.x + gl_FragCoord.y) > 0.0 ? 1.0 : -1.0;
 
 	color.r = abs(color.r + shift * negate);

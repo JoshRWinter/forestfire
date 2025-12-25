@@ -86,6 +86,8 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 		ffmode.uniform_burn_rate = get_uniform(ffmode.program, "burn_rate");
 		ffmode.uniform_fade_out_rate = get_uniform(ffmode.program, "fade_out_rate");
 		ffmode.uniform_catch_fire_threshold = get_uniform(ffmode.program, "catch_fire_threshold");
+		ffmode.uniform_color_data_len = get_uniform(ffmode.program, "color_data_len");
+		ffmode.uniform_fire_color_data_len = get_uniform(ffmode.program, "fire_color_data_len");
 
 		glUniform1i(uniform_noise, noise_texture_unit - GL_TEXTURE0);
 		glUniform1i(uniform_fire, fire_b_texture_unit - GL_TEXTURE0);
@@ -107,19 +109,7 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 		{
 			// tree colors
 			{
-				// clang-format off
-				const float colors[] =
-				{
-					1.0f, 0.0f, 0.0f, 0.0f,
-					0.0f, 1.0f, 0.0f, 0.0f,
-					0.0f, 0.0f, 1.0f, 0.0f,
-					1.0f, 1.0f, 0.0f, 0.0f,
-					1.0f, 0.0f, 1.0f, 0.0f,
-					0.0f, 1.0f, 1.0f, 0.0f
-				};
-				// clang-format on
-
-				glUniform1i(get_uniform(ffmode.program, "color_data_len"), 6);
+				glUniform1i(ffmode.uniform_color_data_len, 0);
 
 				const auto i = glGetProgramResourceIndex(ffmode.program.get(), GL_SHADER_STORAGE_BLOCK, "color_data");
 				if (i == GL_INVALID_INDEX)
@@ -128,20 +118,11 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 				glShaderStorageBlockBinding(ffmode.program.get(), i, color_shader_storage_block_index);
 				glBindBuffer(GL_SHADER_STORAGE_BUFFER, ffmode.colors.get());
 				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, color_shader_storage_block_index, ffmode.colors.get());
-				glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
 			}
 
 			// fire colors
 			{
-				// clang-format off
-				const float colors[] =
-				{
-					1.0f, 0.0f, 0.0f, 0.0f,
-					0.0f, 1.0f, 0.0f, 0.0f
-				};
-				// clang-format on
-
-				glUniform1i(get_uniform(ffmode.program, "fire_color_data_len"), 2);
+				glUniform1i(ffmode.uniform_fire_color_data_len, 0);
 
 				const auto i = glGetProgramResourceIndex(ffmode.program.get(), GL_SHADER_STORAGE_BLOCK, "fire_color_data");
 				if (i == GL_INVALID_INDEX)
@@ -150,7 +131,6 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 				glShaderStorageBlockBinding(ffmode.program.get(), i, fire_color_shader_storage_block_index);
 				glBindBuffer(GL_SHADER_STORAGE_BUFFER, ffmode.firecolors.get());
 				glBindBufferBase(GL_SHADER_STORAGE_BUFFER, fire_color_shader_storage_block_index, ffmode.firecolors.get());
-				glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
 			}
 		}
 	}
@@ -273,7 +253,7 @@ void Renderer::resize(const win::Dimensions<int> &dims)
 	win::gl_check_error();
 }
 
-void Renderer::draw(const SimulationSettings &settings, float time)
+void Renderer::draw(float time)
 {
 	// do tree simulation
 	{
@@ -346,6 +326,50 @@ void Renderer::draw(const SimulationSettings &settings, float time)
 	ffmode.pingpong = !ffmode.pingpong;
 
 	win::gl_check_error();
+}
+
+void Renderer::set_settings(const SimulationSettings &settings)
+{
+	this->settings = settings;
+
+	auto decode = [](unsigned char c)
+	{
+		const float norm = c / 255.0f;
+		return norm <= 0.04045f ? norm / 12.92f : std::powf((norm + 0.055f) / 1.055f, 2.4f);
+	};
+
+	glBindVertexArray(ffmode.vao.get());
+	glUseProgram(ffmode.program.get());
+
+	{
+		std::unique_ptr<float[]> colors(new float[settings.tree_colors.size() * 4]);
+		for (int i = 0; i < settings.tree_colors.size(); ++i)
+		{
+			colors[i * 4] = decode(settings.tree_colors[i].red);
+			colors[i * 4 + 1] = decode(settings.tree_colors[i].green);
+			colors[i * 4 + 2] = decode(settings.tree_colors[i].blue);
+			colors[i * 4 + 3] = 0.0f;
+		}
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ffmode.colors.get());
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * settings.tree_colors.size() * 4, colors.get(), GL_STATIC_DRAW);
+		glUniform1i(ffmode.uniform_color_data_len, settings.tree_colors.size());
+	}
+
+	{
+		std::unique_ptr<float[]> colors(new float[settings.fire_colors.size() * 4]);
+		for (int i = 0; i < settings.fire_colors.size(); ++i)
+		{
+			colors[i * 4] = decode(settings.fire_colors[i].red);
+			colors[i * 4 + 1] = decode(settings.fire_colors[i].green);
+			colors[i * 4 + 2] = decode(settings.fire_colors[i].blue);
+			colors[i * 4 + 3] = 0.0f;
+		}
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ffmode.firecolors.get());
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * settings.fire_colors.size() * 4, colors.get(), GL_STATIC_DRAW);
+		glUniform1i(ffmode.uniform_fire_color_data_len, settings.fire_colors.size());
+	}
 }
 
 std::unique_ptr<unsigned char[]> Renderer::generate_treegen_noise()

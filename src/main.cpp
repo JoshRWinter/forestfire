@@ -94,19 +94,32 @@ int main(int argc, char **argv)
 		0.004f,
 		0.001f,
 		0.04f,
-		3
+		3,
+		{
+			win::Color<unsigned char>(255, 0, 0),
+			win::Color<unsigned char>(0, 255, 0),
+			win::Color<unsigned char>(0, 0, 255),
+			win::Color<unsigned char>(255, 255, 0),
+			win::Color<unsigned char>(255, 0, 255),
+			win::Color<unsigned char>(0, 255, 255)
+		},
+		{
+			win::Color<unsigned char>(255, 0, 0),
+			win::Color<unsigned char>(0, 255, 0)
+		}
 	};
 	// clang-format on
 
 	int fps = 0;
 	auto last_fps = std::chrono::high_resolution_clock::now();
+	renderer.set_settings(settings);
 
 	while (!quit)
 	{
 		display.process();
 
 		const auto time = std::fmodf(std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start).count() / 1000, 1.0);
-		renderer.draw(settings, time);
+		renderer.draw(time);
 
 		++fps;
 		const auto now = std::chrono::high_resolution_clock::now();
