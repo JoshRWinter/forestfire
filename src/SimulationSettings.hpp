@@ -29,4 +29,8 @@ struct SimulationSettings
 	// A list of possible colors for fire. A color will be chosen at random
 	// sRGB
 	std::vector<win::Color<unsigned char>> fire_colors;
+
+	// A list of textures for tree spawning patters
+	// Monochrome 8bit only
+	std::vector<std::string> patterns;
 };

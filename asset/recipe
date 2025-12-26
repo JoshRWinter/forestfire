@@ -4,3 +4,7 @@ shader/gl/fire.vert z
 shader/gl/fire.frag z
 shader/gl/post.vert z
 shader/gl/post.frag z
+
+svg2tga {
+    texture/tree.svg 312 500
+}

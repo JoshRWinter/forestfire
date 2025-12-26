@@ -1,6 +1,8 @@
 #include <cmath>
 #include <random>
 
+#include <win/Targa.hpp>
+
 #include "Renderer.hpp"
 
 using namespace win::gl;
@@ -15,7 +17,8 @@ GLint get_uniform(win::GLProgram &program, const char *name)
 }
 
 Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
-	: mersenne(42'069)
+	: roll(roll)
+	, mersenne(42'069)
 	, dims(dims)
 {
 	printf("%s\n%s\n", (const char *)glGetString(GL_VENDOR), (const char *)glGetString(GL_RENDERER));
@@ -77,7 +80,9 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 		ffmode.program = win::GLProgram(win::load_gl_shaders(roll["shader/gl/ff.vert"], roll["shader/gl/ff.frag"]));
 		glUseProgram(ffmode.program.get());
 		const auto uniform_noise = get_uniform(ffmode.program, "noise");
+		const auto uniform_pattern = get_uniform(ffmode.program, "pattern");
 		ffmode.uniform_tcshift = get_uniform(ffmode.program, "tcshift");
+		ffmode.uniform_patternsqueeze = get_uniform(ffmode.program, "patternsqueeze");
 		ffmode.uniform_trees = get_uniform(ffmode.program, "trees");
 		const auto uniform_fire = get_uniform(ffmode.program, "fire");
 		ffmode.uniform_strike = get_uniform(ffmode.program, "strike");
@@ -90,6 +95,7 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 		ffmode.uniform_fire_color_data_len = get_uniform(ffmode.program, "fire_color_data_len");
 
 		glUniform1i(uniform_noise, noise_texture_unit - GL_TEXTURE0);
+		glUniform1i(uniform_pattern, pattern_texture_unit - GL_TEXTURE0);
 		glUniform1i(uniform_fire, fire_b_texture_unit - GL_TEXTURE0);
 
 		// initialize noise texture
@@ -199,6 +205,8 @@ void Renderer::draw()
 					std::uniform_real_distribution<float>(-10.0f, 10.0f)(mersenne),
 					std::uniform_real_distribution<float>(-10.0f, 10.0f)(mersenne));
 
+		glUniform1f(ffmode.uniform_patternsqueeze, ffmode.pattern_squeezes.at(0));
+
 		// lightning strike?
 		if (std::uniform_int_distribution<int>(0, 300)(mersenne) == 0) // || true)
 		{
@@ -218,7 +226,7 @@ void Renderer::draw()
 
 		glUniform1ui(ffmode.uniform_frame, frame++);
 
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
 
 	// do fire simulation
@@ -341,6 +349,7 @@ void Renderer::set_settings(const SimulationSettings &settings)
 	glBindVertexArray(ffmode.vao.get());
 	glUseProgram(ffmode.program.get());
 
+	// tree colors
 	{
 		std::unique_ptr<float[]> colors(new float[settings.tree_colors.size() * 4]);
 		for (int i = 0; i < settings.tree_colors.size(); ++i)
@@ -356,6 +365,7 @@ void Renderer::set_settings(const SimulationSettings &settings)
 		glUniform1i(ffmode.uniform_color_data_len, settings.tree_colors.size());
 	}
 
+	// fire colors
 	{
 		std::unique_ptr<float[]> colors(new float[settings.fire_colors.size() * 4]);
 		for (int i = 0; i < settings.fire_colors.size(); ++i)
@@ -369,6 +379,48 @@ void Renderer::set_settings(const SimulationSettings &settings)
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ffmode.firecolors.get());
 		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * settings.fire_colors.size() * 4, colors.get(), GL_STATIC_DRAW);
 		glUniform1i(ffmode.uniform_fire_color_data_len, settings.fire_colors.size());
+	}
+
+	// patterns
+	{
+		ffmode.patterns.clear();
+
+		if (settings.patterns.empty())
+			win::bug("no patterns bitch");
+
+		glActiveTexture(pattern_texture_unit);
+
+		for (const auto &file : settings.patterns)
+		{
+			win::Targa tga(std::move(roll[file.c_str()]));
+
+			GLenum format;
+			switch (tga.bpp())
+			{
+				case 8:
+					format = GL_RED;
+					break;
+				case 16:
+					format = GL_RG;
+					break;
+				case 24:
+					format = GL_RGB;
+					break;
+				default:
+					win::bug(file + " is not 8bpp (" + std::to_string(tga.bpp()) + ")");
+			}
+
+			const auto &tex = ffmode.patterns.emplace_back();
+			glBindTexture(GL_TEXTURE_2D, tex.get());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, tga.width(), tga.height(), 0, format, GL_UNSIGNED_BYTE, tga.data());
+
+			ffmode.pattern_squeezes.push_back((dims.height / (float)dims.width) * (tga.height() / (float)tga.width()) * 1.0f);
+		}
 	}
 }
 

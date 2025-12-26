@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <random>
+#include <vector>
 
 #include <win/AssetRoll.hpp>
 #include <win/gl/GL.hpp>
@@ -12,24 +13,24 @@
 
 class Renderer
 {
-	WIN_NO_COPY(Renderer);
+	WIN_NO_COPY_MOVE(Renderer);
 
 	static constexpr GLenum font_texture_unit = GL_TEXTURE0;
 	static constexpr GLuint font_ssbo = 0;
 
 	static constexpr GLenum noise_texture_unit = GL_TEXTURE1;
-	static constexpr GLenum ff1_texture_unit = GL_TEXTURE2;
-	static constexpr GLenum ff2_texture_unit = GL_TEXTURE3;
-	static constexpr GLenum ffvisual_texture_unit = GL_TEXTURE4;
-	static constexpr GLenum fire_a_texture_unit = GL_TEXTURE5;
-	static constexpr GLenum fire_b_texture_unit = GL_TEXTURE6;
+	static constexpr GLenum pattern_texture_unit = GL_TEXTURE2;
+	static constexpr GLenum ff1_texture_unit = GL_TEXTURE3;
+	static constexpr GLenum ff2_texture_unit = GL_TEXTURE4;
+	static constexpr GLenum ffvisual_texture_unit = GL_TEXTURE5;
+	static constexpr GLenum fire_a_texture_unit = GL_TEXTURE6;
+	static constexpr GLenum fire_b_texture_unit = GL_TEXTURE7;
 
 	static constexpr GLuint color_shader_storage_block_index = 0;
 	static constexpr GLuint fire_color_shader_storage_block_index = 1;
 
 public:
 	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims);
-	Renderer &operator=(Renderer &&) = default;
 
 	void draw();
 	void resize(const win::Dimensions<int> &dims);
@@ -38,6 +39,7 @@ public:
 private:
 	std::unique_ptr<unsigned char[]> generate_treegen_noise();
 
+	win::AssetRoll &roll;
 	std::mt19937 mersenne;
 	unsigned frame = 0;
 	win::Dimensions<int> dims;
@@ -52,6 +54,7 @@ private:
 		win::GLTexture noise;
 		win::GLProgram program;
 		int uniform_tcshift;
+		int uniform_patternsqueeze;
 		int uniform_trees;
 		int uniform_strike;
 		int uniform_strike_color;
@@ -67,6 +70,9 @@ private:
 		win::GLVertexArray vao;
 		win::GLBuffer colors;
 		win::GLBuffer firecolors;
+
+		std::vector<win::GLTexture> patterns;
+		std::vector<float> pattern_squeezes;
 	} ffmode;
 
 	struct

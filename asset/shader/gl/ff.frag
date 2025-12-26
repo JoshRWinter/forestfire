@@ -26,12 +26,14 @@ layout (location = 0) out vec4 tree_info;
 layout (location = 1) out vec3 tree_visual;
 
 in vec2 noisetexcoord;
+in vec2 patterntexcoord;
 
 uniform ivec2 strike;
 uniform int strike_color;
 uniform uint frame;
 
 uniform sampler2D noise;
+uniform sampler2D pattern;
 uniform sampler2D trees;
 uniform sampler2D fire;
 
@@ -69,7 +71,9 @@ vec3 deviate_color(vec3 color)
 
 void main()
 {
-	bool newtree = texture(noise, noisetexcoord).r > 0.0;// make a new tree
+	bool noise_newtree = texture(noise, noisetexcoord).r > 0.0;// make a new tree
+	bool pattern_newtree = texture(pattern, patterntexcoord).r > 0.0;// pattern allows new tree at this spot
+	bool newtree = noise_newtree && pattern_newtree;
 	tree_info = texelFetch(trees, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
 	vec2 existing_fire = texelFetch(fire, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).rg;// is a tree burning nearby
 
