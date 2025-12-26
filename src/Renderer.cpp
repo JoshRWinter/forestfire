@@ -82,7 +82,7 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 		const auto uniform_fire = get_uniform(ffmode.program, "fire");
 		ffmode.uniform_strike = get_uniform(ffmode.program, "strike");
 		ffmode.uniform_strike_color = get_uniform(ffmode.program, "strike_color");
-		ffmode.uniform_time = get_uniform(ffmode.program, "time");
+		ffmode.uniform_frame = get_uniform(ffmode.program, "frame");
 		ffmode.uniform_burn_rate = get_uniform(ffmode.program, "burn_rate");
 		ffmode.uniform_fade_out_rate = get_uniform(ffmode.program, "fade_out_rate");
 		ffmode.uniform_catch_fire_threshold = get_uniform(ffmode.program, "catch_fire_threshold");
@@ -185,6 +185,81 @@ Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 	win::gl_check_error();
 }
 
+void Renderer::draw()
+{
+	// do tree simulation
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, ffmode.pingpong ? ffmode.fbo_ff1.get() : ffmode.fbo_ff2.get());
+
+		glUseProgram(ffmode.program.get());
+		glUniform1i(ffmode.uniform_trees, (ffmode.pingpong ? ff2_texture_unit : ff1_texture_unit) - GL_TEXTURE0);
+		glBindVertexArray(ffmode.vao.get());
+
+		glUniform2f(ffmode.uniform_tcshift,
+					std::uniform_real_distribution<float>(-10.0f, 10.0f)(mersenne),
+					std::uniform_real_distribution<float>(-10.0f, 10.0f)(mersenne));
+
+		// lightning strike?
+		if (std::uniform_int_distribution<int>(0, 300)(mersenne) == 0) // || true)
+		{
+			glUniform1i(ffmode.uniform_strike_color, std::uniform_int_distribution<int>(0, 1)(mersenne));
+			glUniform2i(ffmode.uniform_strike,
+						std::uniform_int_distribution<int>(0, dims.width)(mersenne),
+						std::uniform_int_distribution<int>(0, dims.height)(mersenne));
+		}
+		else
+		{
+			glUniform2i(ffmode.uniform_strike, -1, -1);
+		}
+
+		glUniform1f(ffmode.uniform_burn_rate, settings.burn_rate);
+		glUniform1f(ffmode.uniform_fade_out_rate, settings.fade_out_rate);
+		glUniform1f(ffmode.uniform_catch_fire_threshold, settings.catch_fire_threshold);
+
+		glUniform1ui(ffmode.uniform_frame, frame++);
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+	}
+
+	// do fire simulation
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, firemode.fbo_a.get());
+
+		glBindVertexArray(firemode.vao.get());
+
+		glUseProgram(firemode.program.get());
+
+		glUniform1i(firemode.uniform_tex, (ffmode.pingpong ? ff1_texture_unit : ff2_texture_unit) - GL_TEXTURE0);
+		glUniform1i(firemode.uniform_horizontal, 1);
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, firemode.fbo_b.get());
+
+		glUniform1i(firemode.uniform_tex, fire_a_texture_unit - GL_TEXTURE0);
+		glUniform1i(firemode.uniform_horizontal, 0);
+		glUniform1i(firemode.uniform_burn_radius, settings.burn_radius);
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+	}
+
+	// post processing
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		glUseProgram(postmode.program.get());
+		glBindVertexArray(postmode.vao.get());
+
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+	}
+
+	ffmode.pingpong = !ffmode.pingpong;
+
+	win::gl_check_error();
+}
+
 void Renderer::resize(const win::Dimensions<int> &dims)
 {
 	const auto olddims = this->dims;
@@ -249,81 +324,6 @@ void Renderer::resize(const win::Dimensions<int> &dims)
 	}
 
 	glViewport(0, 0, dims.width, dims.height);
-
-	win::gl_check_error();
-}
-
-void Renderer::draw(float time)
-{
-	// do tree simulation
-	{
-		glBindFramebuffer(GL_FRAMEBUFFER, ffmode.pingpong ? ffmode.fbo_ff1.get() : ffmode.fbo_ff2.get());
-
-		glUseProgram(ffmode.program.get());
-		glUniform1i(ffmode.uniform_trees, (ffmode.pingpong ? ff2_texture_unit : ff1_texture_unit) - GL_TEXTURE0);
-		glBindVertexArray(ffmode.vao.get());
-
-		glUniform2f(ffmode.uniform_tcshift,
-					std::uniform_real_distribution<float>(-10.0f, 10.0f)(mersenne),
-					std::uniform_real_distribution<float>(-10.0f, 10.0f)(mersenne));
-
-		// lightning strike?
-		if (std::uniform_int_distribution<int>(0, 300)(mersenne) == 0) // || true)
-		{
-			glUniform1i(ffmode.uniform_strike_color, std::uniform_int_distribution<int>(0, 1)(mersenne));
-			glUniform2i(ffmode.uniform_strike,
-						std::uniform_int_distribution<int>(0, dims.width)(mersenne),
-						std::uniform_int_distribution<int>(0, dims.height)(mersenne));
-		}
-		else
-		{
-			glUniform2i(ffmode.uniform_strike, -1, -1);
-		}
-
-		glUniform1f(ffmode.uniform_burn_rate, settings.burn_rate);
-		glUniform1f(ffmode.uniform_fade_out_rate, settings.fade_out_rate);
-		glUniform1f(ffmode.uniform_catch_fire_threshold, settings.catch_fire_threshold);
-
-		glUniform1f(ffmode.uniform_time, time);
-
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-	}
-
-	// do fire simulation
-	{
-		glBindFramebuffer(GL_FRAMEBUFFER, firemode.fbo_a.get());
-
-		glBindVertexArray(firemode.vao.get());
-
-		glUseProgram(firemode.program.get());
-
-		glUniform1i(firemode.uniform_tex, (ffmode.pingpong ? ff1_texture_unit : ff2_texture_unit) - GL_TEXTURE0);
-		glUniform1i(firemode.uniform_horizontal, 1);
-
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-
-		glBindFramebuffer(GL_FRAMEBUFFER, firemode.fbo_b.get());
-
-		glUniform1i(firemode.uniform_tex, fire_a_texture_unit - GL_TEXTURE0);
-		glUniform1i(firemode.uniform_horizontal, 0);
-		glUniform1i(firemode.uniform_burn_radius, settings.burn_radius);
-
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-	}
-
-	// post processing
-	{
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		glUseProgram(postmode.program.get());
-		glBindVertexArray(postmode.vao.get());
-
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-	}
-
-	ffmode.pingpong = !ffmode.pingpong;
 
 	win::gl_check_error();
 }

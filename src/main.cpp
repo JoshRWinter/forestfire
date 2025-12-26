@@ -86,8 +86,6 @@ int main(int argc, char **argv)
 			renderer.resize(dims);
 		});
 
-	const auto start = std::chrono::high_resolution_clock::now();
-
 	// clang-format off
 	const SimulationSettings settings =
 	{
@@ -118,8 +116,7 @@ int main(int argc, char **argv)
 	{
 		display.process();
 
-		const auto time = std::fmodf(std::chrono::duration<float>(std::chrono::high_resolution_clock::now() - start).count() / 1000, 1.0);
-		renderer.draw(time);
+		renderer.draw();
 
 		++fps;
 		const auto now = std::chrono::high_resolution_clock::now();

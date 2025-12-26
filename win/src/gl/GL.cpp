@@ -132,6 +132,7 @@ void load_gl_functions()
 	glUniform3f = (decltype(glUniform3f)) get_proc("glUniform3f");
 	glUniform4f = (decltype(glUniform4f)) get_proc("glUniform4f");
 	glUniform1i = (decltype(glUniform1i)) get_proc("glUniform1i");
+	glUniform1ui = (decltype(glUniform1ui)) get_proc("glUniform1ui");
 	glUniform2i = (decltype(glUniform2i)) get_proc("glUniform2i");
 
 	glDrawElementsInstanced = (decltype(glDrawElementsInstanced)) get_proc("glDrawElementsInstanced");

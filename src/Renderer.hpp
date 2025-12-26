@@ -31,15 +31,15 @@ public:
 	Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims);
 	Renderer &operator=(Renderer &&) = default;
 
+	void draw();
 	void resize(const win::Dimensions<int> &dims);
-	void draw(float time);
 	void set_settings(const SimulationSettings &settings);
 
 private:
 	std::unique_ptr<unsigned char[]> generate_treegen_noise();
 
 	std::mt19937 mersenne;
-
+	unsigned frame = 0;
 	win::Dimensions<int> dims;
 
 	SimulationSettings settings;
@@ -55,7 +55,7 @@ private:
 		int uniform_trees;
 		int uniform_strike;
 		int uniform_strike_color;
-		int uniform_time;
+		int uniform_frame;
 		int uniform_burn_rate;
 		int uniform_fade_out_rate;
 		int uniform_catch_fire_threshold;

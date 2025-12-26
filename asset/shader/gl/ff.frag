@@ -29,7 +29,7 @@ in vec2 noisetexcoord;
 
 uniform ivec2 strike;
 uniform int strike_color;
-uniform float time;
+uniform uint frame;
 
 uniform sampler2D noise;
 uniform sampler2D trees;
@@ -113,7 +113,7 @@ void main()
 		// no tree at this spot, but we can plant one
 		exists = true;
 		tree_info.g = fade_in_rate;
-		tree_info.b = time * 10;
+		tree_info.b = frame * 0.00005;
 	}
 	else
 	{
@@ -134,7 +134,7 @@ void main()
 
 		// make the trees twinkle
 		float twinkle_phase_shift = float(gl_FragCoord.x + gl_FragCoord.y);
-		float twinkle_freq = time * (burning ? 3000 : 1000);
+		float twinkle_freq = frame * (burning ? 0.06 : 0.01);
 		float twinkle = abs(sin(twinkle_phase_shift + twinkle_freq));
 		twinkle = (twinkle * 0.85) + 0.15;
 		tree_visual = tree_visual.rgb * twinkle;
