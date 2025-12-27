@@ -220,10 +220,6 @@ void Renderer::draw()
 			glUniform2i(ffmode.uniform_strike, -1, -1);
 		}
 
-		glUniform1f(ffmode.uniform_burn_rate, settings.burn_rate);
-		glUniform1f(ffmode.uniform_fade_out_rate, settings.fade_out_rate);
-		glUniform1f(ffmode.uniform_catch_fire_threshold, settings.catch_fire_threshold);
-
 		glUniform1ui(ffmode.uniform_frame, frame++);
 
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -246,7 +242,6 @@ void Renderer::draw()
 
 		glUniform1i(firemode.uniform_tex, fire_a_texture_unit - GL_TEXTURE0);
 		glUniform1i(firemode.uniform_horizontal, 0);
-		glUniform1i(firemode.uniform_burn_radius, settings.burn_radius);
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 	}
@@ -349,6 +344,10 @@ void Renderer::set_settings(const SimulationSettings &settings)
 	glBindVertexArray(ffmode.vao.get());
 	glUseProgram(ffmode.program.get());
 
+	glUniform1f(ffmode.uniform_burn_rate, settings.burn_rate);
+	glUniform1f(ffmode.uniform_fade_out_rate, settings.fade_out_rate);
+	glUniform1f(ffmode.uniform_catch_fire_threshold, settings.catch_fire_threshold);
+
 	// tree colors
 	{
 		std::unique_ptr<float[]> colors(new float[settings.tree_colors.size() * 4]);
@@ -422,6 +421,9 @@ void Renderer::set_settings(const SimulationSettings &settings)
 			ffmode.pattern_squeezes.push_back((dims.height / (float)dims.width) * (tga.height() / (float)tga.width()) * 1.0f);
 		}
 	}
+
+	glUseProgram(firemode.program.get());
+	glUniform1i(firemode.uniform_burn_radius, settings.burn_radius);
 }
 
 std::unique_ptr<unsigned char[]> Renderer::generate_treegen_noise()
