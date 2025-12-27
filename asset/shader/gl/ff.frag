@@ -39,6 +39,7 @@ uniform sampler2D fire;
 
 const int strike_radius = 5;
 const float fade_in_rate = 0.03;
+const float tree_spawn_sensitivity = 0.7;
 
 // simulation settings
 uniform float burn_rate;
@@ -71,9 +72,9 @@ vec3 deviate_color(vec3 color)
 
 void main()
 {
-	bool noise_newtree = texture(noise, noisetexcoord).r > 0.0;// make a new tree
-	bool pattern_newtree = texture(pattern, patterntexcoord).r > 0.0;// pattern allows new tree at this spot
-	bool newtree = noise_newtree && pattern_newtree;
+	float noise_newtree = texture(noise, noisetexcoord).r;// make a new tree
+	float pattern_newtree = texture(pattern, patterntexcoord).r;// pattern allows new tree at this spot
+	bool newtree = noise_newtree + pattern_newtree > tree_spawn_sensitivity;
 	tree_info = texelFetch(trees, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
 	vec2 existing_fire = texelFetch(fire, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0).rg;// is a tree burning nearby
 

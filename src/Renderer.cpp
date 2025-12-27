@@ -429,7 +429,7 @@ std::unique_ptr<unsigned char[]> Renderer::generate_treegen_noise()
 	std::unique_ptr<unsigned char[]> data(new unsigned char[dims.width * dims.height]);
 	for (int i = 0; i < dims.width * dims.height; ++i)
 	{
-		data[i] = std::uniform_int_distribution<int>(0, 50'000)(mersenne) == 0 ? 255 : 0;
+		data[i] = std::uniform_int_distribution<int>(0, 20'000)(mersenne) == 0 ? std::uniform_int_distribution<int>(100, 255)(mersenne) : 0;
 	}
 
 	return data;
