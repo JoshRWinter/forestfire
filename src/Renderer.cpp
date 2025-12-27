@@ -205,8 +205,6 @@ void Renderer::draw()
 					std::uniform_real_distribution<float>(-10.0f, 10.0f)(mersenne),
 					std::uniform_real_distribution<float>(-10.0f, 10.0f)(mersenne));
 
-		glUniform1f(ffmode.uniform_patternsqueeze, ffmode.pattern_squeezes.at(0));
-
 		// lightning strike?
 		if (std::uniform_int_distribution<int>(0, 300)(mersenne) == 0) // || true)
 		{
@@ -218,6 +216,20 @@ void Renderer::draw()
 		else
 		{
 			glUniform2i(ffmode.uniform_strike, -1, -1);
+		}
+
+		// pick a pattern
+		{
+			const int index = (frame / 15'000) % ffmode.patterns.size();
+			glActiveTexture(pattern_texture_unit);
+			glBindTexture(GL_TEXTURE_2D, ffmode.patterns.at(index).get());
+
+			const float w = ffmode.patterndims[index].width;
+			const float h = ffmode.patterndims[index].height;
+			const float scale = ((dims.height / h) * w) / dims.width;
+			const float squeeze = (1 - scale) / (2.0 * scale);
+
+			glUniform1f(ffmode.uniform_patternsqueeze, squeeze);
 		}
 
 		glUniform1ui(ffmode.uniform_frame, frame++);
@@ -405,6 +417,9 @@ void Renderer::set_settings(const SimulationSettings &settings)
 				case 24:
 					format = GL_RGB;
 					break;
+				case 32:
+					format = GL_RGBA;
+					break;
 				default:
 					win::bug(file + " is not 8bpp (" + std::to_string(tga.bpp()) + ")");
 			}
@@ -418,7 +433,7 @@ void Renderer::set_settings(const SimulationSettings &settings)
 
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, tga.width(), tga.height(), 0, format, GL_UNSIGNED_BYTE, tga.data());
 
-			ffmode.pattern_squeezes.push_back((dims.height / (float)dims.width) * (tga.height() / (float)tga.width()) * 1.0f);
+			ffmode.patterndims.emplace_back(tga.width(), tga.height());
 		}
 	}
 

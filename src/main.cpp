@@ -106,7 +106,9 @@ int main(int argc, char **argv)
 			win::Color<unsigned char>(0, 255, 0)
 		},
 		{
-			"texture/tree.tga"
+			"texture/tree.tga",
+			"texture/package.tga",
+			"texture/candycane.tga"
 		}
 	};
 	// clang-format on

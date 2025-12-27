@@ -6,5 +6,7 @@ shader/gl/post.vert z
 shader/gl/post.frag z
 
 svg2tga {
-    texture/tree.svg 312 500
+    texture/tree.svg 292 500
+    texture/package.svg 487 500
+    texture/candycane.svg 492 500
 }

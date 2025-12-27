@@ -11,7 +11,7 @@ uniform float patternsqueeze;
 
 void main()
 {
-	float[8] patterntc = float[8](-0.1 - patternsqueeze, 1.1, -0.1 - patternsqueeze, -0.1, 1.1 + patternsqueeze, 1.1, 1.1 + patternsqueeze, -0.1);
+	float[8] patterntc = float[8](0.0 - patternsqueeze, 1.0, 0.0 - patternsqueeze, 0.0, 1.0 + patternsqueeze, 1.0, 1.0 + patternsqueeze, 0.0);
 
 	noisetexcoord = vec2(tc[gl_VertexID * 2 + 0] + tcshift.s, tc[gl_VertexID * 2 + 1] + tcshift.t);
 	patterntexcoord = vec2(patterntc[gl_VertexID * 2 + 0], patterntc[gl_VertexID * 2 + 1]);

@@ -72,7 +72,7 @@ private:
 		win::GLBuffer firecolors;
 
 		std::vector<win::GLTexture> patterns;
-		std::vector<float> pattern_squeezes;
+		std::vector<win::Dimensions<int>> patterndims;
 	} ffmode;
 
 	struct
