@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <cmath>
+#include <ctime>
 #include <random>
 
 #include <win/Targa.hpp>
@@ -18,7 +20,7 @@ GLint get_uniform(win::GLProgram &program, const char *name)
 
 Renderer::Renderer(win::AssetRoll &roll, const win::Dimensions<int> &dims)
 	: roll(roll)
-	, mersenne(42'069)
+	, mersenne(time(NULL))
 	, dims(dims)
 {
 	printf("%s\n%s\n", (const char *)glGetString(GL_VENDOR), (const char *)glGetString(GL_RENDERER));
@@ -206,9 +208,9 @@ void Renderer::draw()
 					std::uniform_real_distribution<float>(-10.0f, 10.0f)(mersenne));
 
 		// lightning strike?
-		if (std::uniform_int_distribution<int>(0, 300)(mersenne) == 0) // || true)
+		if (std::uniform_int_distribution<int>(0, 200)(mersenne) == 0) // || true)
 		{
-			glUniform1i(ffmode.uniform_strike_color, std::uniform_int_distribution<int>(0, 1)(mersenne));
+			glUniform1i(ffmode.uniform_strike_color, std::uniform_int_distribution<int>(0, settings.fire_colors.size() - 1)(mersenne));
 			glUniform2i(ffmode.uniform_strike,
 						std::uniform_int_distribution<int>(0, dims.width)(mersenne),
 						std::uniform_int_distribution<int>(0, dims.height)(mersenne));
@@ -363,17 +365,21 @@ void Renderer::set_settings(const SimulationSettings &settings)
 	// tree colors
 	{
 		std::unique_ptr<float[]> colors(new float[settings.tree_colors.size() * 4]);
-		for (int i = 0; i < settings.tree_colors.size(); ++i)
+
+		auto tree_colors = settings.tree_colors;
+		std::shuffle(tree_colors.begin(), tree_colors.end(), mersenne);
+
+		for (int i = 0; i < tree_colors.size(); ++i)
 		{
-			colors[i * 4] = decode(settings.tree_colors[i].red);
-			colors[i * 4 + 1] = decode(settings.tree_colors[i].green);
-			colors[i * 4 + 2] = decode(settings.tree_colors[i].blue);
+			colors[i * 4] = decode(tree_colors[i].red);
+			colors[i * 4 + 1] = decode(tree_colors[i].green);
+			colors[i * 4 + 2] = decode(tree_colors[i].blue);
 			colors[i * 4 + 3] = 0.0f;
 		}
 
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ffmode.colors.get());
-		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * settings.tree_colors.size() * 4, colors.get(), GL_STATIC_DRAW);
-		glUniform1i(ffmode.uniform_color_data_len, settings.tree_colors.size());
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * tree_colors.size() * 4, colors.get(), GL_STATIC_DRAW);
+		glUniform1i(ffmode.uniform_color_data_len, tree_colors.size());
 	}
 
 	// fire colors
@@ -395,13 +401,17 @@ void Renderer::set_settings(const SimulationSettings &settings)
 	// patterns
 	{
 		ffmode.patterns.clear();
+		ffmode.patterndims.clear();
 
-		if (settings.patterns.empty())
+		auto patterns = settings.patterns;
+		std::shuffle(patterns.begin(), patterns.end(), mersenne);
+
+		if (patterns.empty())
 			win::bug("no patterns bitch");
 
 		glActiveTexture(pattern_texture_unit);
 
-		for (const auto &file : settings.patterns)
+		for (const auto &file : patterns)
 		{
 			win::Targa tga(std::move(roll[file.c_str()]));
 

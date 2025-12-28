@@ -115,8 +115,11 @@ int main(int argc, char **argv)
 			win::Color<unsigned char>(0, 255, 255)
 		},
 		{
-			win::Color<unsigned char>(255, 0, 0),
-			win::Color<unsigned char>(0, 255, 0)
+			win::Color<unsigned char>(0xd5, 0xd1, 0xe9),
+			win::Color<unsigned char>(0xd0, 0xe4, 0xee),
+			win::Color<unsigned char>(0xf3, 0xf5, 0xa9),
+			win::Color<unsigned char>(0xf5, 0xcf, 0x9f),
+			win::Color<unsigned char>(0xf5, 0xa7, 0xa6)
 		},
 		{
 			"texture/tree.tga",
