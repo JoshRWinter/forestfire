@@ -82,6 +82,12 @@ add_library(win STATIC
 	include/win/FileStream.hpp
 	src/FileStream.cpp
 
+	include/win/X11MonitorEnumerator.hpp
+	src/X11MonitorEnumerator.cpp
+
+	include/win/MonitorEnumerator.hpp
+	src/MonitorEnumerator.cpp
+
 	include/win/DisplayBase.hpp
 	src/DisplayBase.cpp
 
