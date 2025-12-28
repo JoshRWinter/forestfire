@@ -30,6 +30,19 @@ int main(int argc, char **argv)
 	display_options.fullscreen = true;
 	display_options.width = 1600;
 	display_options.height = 900;
+#ifdef WINPLAT_WINDOWS
+	{
+		const std::string cmdstring = cmd;
+		if (cmdstring.size() >= 4 && cmdstring.at(0) == '/' && cmdstring.at(1) == 'p' && cmdstring.at(2) == ' ')
+		{
+			unsigned long long u;
+			if (sscanf(cmdstring.substr(3).c_str(), "%llu", &u) != 1)
+				win::bug("Couldn't parse integer from " + cmdstring);
+
+			display_options.parent = (HWND)u;
+		}
+	}
+#endif
 #endif
 	display_options.gl_major = 4;
 	display_options.gl_minor = 6;

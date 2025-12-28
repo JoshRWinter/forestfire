@@ -353,15 +353,46 @@ Win32Display::Win32Display(const DisplayOptions &options)
 	if (!AdjustWindowRectEx(&rect, options.fullscreen ? fullscreen_style : windowed_style, FALSE, 0))
 		win::bug("AdjustWindowRectExFailure");
 
+	DWORD style;
+	int x, y;
+	int w = rect.right - rect.left, h = rect.bottom - rect.top;
+
+	if (options.parent != NULL)
+	{
+		style = WS_CHILD;
+		x = 0;
+		y = 0;
+
+		RECT r;
+		if (!GetWindowRect(options.parent, &r))
+			win::bug("Couldn't get dimensions of parent window.");
+
+		w = r.right - r.left;
+		h = r.bottom - r.top;
+
+	}
+	else if (options.fullscreen)
+	{
+		style = fullscreen_style;
+		x = mi.rcMonitor.left;
+		y = mi.rcMonitor.top;
+	}
+	else
+	{
+		style = windowed_style;
+		x = CW_USEDEFAULT;
+		y = CW_USEDEFAULT;
+	}
+
 	window = CreateWindowEx(
 		0,
 		window_class,
 		options.caption.c_str(),
-		options.fullscreen ? fullscreen_style : windowed_style,
-		options.fullscreen ? mi.rcMonitor.left : CW_USEDEFAULT,
-		options.fullscreen ? mi.rcMonitor.top : CW_USEDEFAULT,
-		rect.right - rect.left,
-		rect.bottom - rect.top,
+		style,
+		x,
+		y,
+		w,
+		h,
 		options.parent,
 		NULL,
 		GetModuleHandle(NULL),
