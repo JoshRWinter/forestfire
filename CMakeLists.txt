@@ -23,9 +23,9 @@ if (SCREENSAVER)
 	add_compile_definitions(SCREENSAVER=1)
 endif()
 
-#if (WIN32)
-#	list(APPEND sources icon.rc)
-#endif ()
+if (WIN32)
+	list(APPEND sources icon.rc)
+endif ()
 
 if (WIN32 AND (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo"))
 	add_executable(${executable} WIN32 ${sources})
