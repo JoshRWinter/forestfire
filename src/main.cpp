@@ -1,20 +1,19 @@
-#include <chrono>
 #include <atomic>
-#include <vector>
+#include <chrono>
 #include <thread>
+#include <vector>
 
 #include <win/AssetRoll.hpp>
 #include <win/Display.hpp>
 #include <win/gl/GL.hpp>
-#include <win/Utility.hpp>
 #include <win/MonitorEnumerator.hpp>
+#include <win/Utility.hpp>
 
 #include "Renderer.hpp"
 #include "SimulationSettings.hpp"
 
 #ifdef ROLLDATA
-static unsigned char rolldata[] =
-{
+static unsigned char rolldata[] = {
 #include ROLLDATA
 };
 #endif
@@ -54,7 +53,7 @@ int main(int argc, char **argv)
 
 	bool previewing = false;
 
-#if defined (SCREENSAVER) && defined (WINPLAT_WINDOWS)
+#if defined(SCREENSAVER) && defined(WINPLAT_WINDOWS)
 	unsigned long long parentwindow = 0;
 
 #ifdef NDEBUG
@@ -96,30 +95,31 @@ int main(int argc, char **argv)
 
 	win::load_gl_functions();
 
-	display.register_button_handler([&allstop, &display, &fullscreen, &previewing](win::Button button, bool press)
-	{
-		switch (button)
+	display.register_button_handler(
+		[&allstop, &display, &fullscreen, &previewing](win::Button button, bool press)
 		{
-			case win::Button::space:
-				display.vsync(!press);
-				break;
+			switch (button)
+			{
+				case win::Button::space:
+					display.vsync(!press);
+					break;
 #ifdef SCREENSAVER
-			default:
-				if (press && !previewing)
-					allstop.store(true);
-				break;
+				default:
+					if (press && !previewing)
+						allstop.store(true);
+					break;
 #else
-			case win::Button::esc:
-				allstop = true;
-				break;
-			case win::Button::f11:
-				if (press)
-				{
-					fullscreen = !fullscreen;
-					display.set_fullscreen(fullscreen);
-				}
-			default:
-				break;
+				case win::Button::esc:
+					allstop = true;
+					break;
+				case win::Button::f11:
+					if (press)
+					{
+						fullscreen = !fullscreen;
+						display.set_fullscreen(fullscreen);
+					}
+				default:
+					break;
 #endif
 			}
 		});
@@ -133,18 +133,19 @@ int main(int argc, char **argv)
 
 #ifdef SCREENSAVER
 	int mousex = -1, mousey = -1;
-	display.register_mouse_handler([&allstop, &mousex, &mousey, &previewing](int x, int y)
-	{
-		if (mousex == -1)
+	display.register_mouse_handler(
+		[&allstop, &mousex, &mousey, &previewing](int x, int y)
 		{
-			mousex = x;
-			mousey = y;
-		}
-		else if ((x != mousex || y != mousey) && !previewing)
-		{
-			allstop.store(true);
-		}
-	});
+			if (mousex == -1)
+			{
+				mousex = x;
+				mousey = y;
+			}
+			else if ((x != mousex || y != mousey) && !previewing)
+			{
+				allstop.store(true);
+			}
+		});
 #endif
 
 	auto dims = win::Dimensions(display.width(), display.height());
@@ -203,7 +204,7 @@ int main(int argc, char **argv)
 		const auto now = std::chrono::high_resolution_clock::now();
 		if (std::chrono::duration<float>(now - last_fps).count() > 1.0f)
 		{
-			//printf("%d fps\n", fps);
+			printf("%d fps\n", fps);
 			fps = 0;
 			last_fps = now;
 		}
@@ -234,11 +235,12 @@ std::vector<std::thread> make_secondary_displays(std::atomic<bool> &allstop)
 		win::Display display(options);
 		display.cursor(false);
 
-		display.register_button_handler([&stop](win::Button button, bool press)
-		{
-			if (press)
-				stop.store(true);
-		});
+		display.register_button_handler(
+			[&stop](win::Button button, bool press)
+			{
+				if (press)
+					stop.store(true);
+			});
 
 		display.register_window_handler(
 			[&stop](win::WindowEvent e)
@@ -248,18 +250,19 @@ std::vector<std::thread> make_secondary_displays(std::atomic<bool> &allstop)
 			});
 
 		int mousex = -1, mousey = -1;
-		display.register_mouse_handler([&stop, &mousex, &mousey](int x, int y)
-		{
-			if (mousex == -1)
+		display.register_mouse_handler(
+			[&stop, &mousex, &mousey](int x, int y)
 			{
-				mousex = x;
-				mousey = y;
-			}
-			else if (mousex != x || mousey != y)
-			{
-				stop.store(true);
-			}
-		});
+				if (mousex == -1)
+				{
+					mousex = x;
+					mousey = y;
+				}
+				else if (mousex != x || mousey != y)
+				{
+					stop.store(true);
+				}
+			});
 
 		glClearColor(0.0, 0.0, 0.0, 0.0);
 
