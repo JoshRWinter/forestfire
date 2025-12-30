@@ -3,7 +3,7 @@
 #if defined WINPLAT_LINUX
 #include <win/X11MonitorEnumerator.hpp>
 #elif defined WINPLAT_WINDOWS
-#error "not implemented"
+#include <win/Win32MonitorEnumerator.hpp>
 #endif
 
 namespace win
@@ -14,6 +14,7 @@ MonitorEnumerator::MonitorEnumerator()
 #if defined WINPLAT_LINUX
 	inner.reset(new X11MonitorEnumerator());
 #elif defined WINPLAT_WINDOWS
+	inner.reset(new Win32MonitorEnumerator());
 #endif
 }
 

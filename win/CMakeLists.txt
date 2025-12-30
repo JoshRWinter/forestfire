@@ -85,6 +85,9 @@ add_library(win STATIC
 	include/win/X11MonitorEnumerator.hpp
 	src/X11MonitorEnumerator.cpp
 
+	include/win/Win32MonitorEnumerator.hpp
+	src/Win32MonitorEnumerator.cpp
+
 	include/win/MonitorEnumerator.hpp
 	src/MonitorEnumerator.cpp
 

@@ -1,3 +1,7 @@
+#include <win/Win.hpp>
+
+#ifdef WINPLAT_LINUX
+
 #include <X11/extensions/Xrandr.h>
 #include <X11/Xlib.h>
 
@@ -7,7 +11,6 @@ namespace win
 {
 
 X11MonitorEnumerator::X11MonitorEnumerator()
-	: MonitorEnumeratorBase()
 {
 	X11MonitorEnumerator::refresh();
 }
@@ -70,3 +73,5 @@ std::vector<Monitor>::const_iterator X11MonitorEnumerator::end() const
 }
 
 }
+
+#endif
