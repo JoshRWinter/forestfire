@@ -12,6 +12,13 @@
 #include "Renderer.hpp"
 #include "SimulationSettings.hpp"
 
+#ifdef ROLLDATA
+static unsigned char rolldata[] =
+{
+#include ROLLDATA
+};
+#endif
+
 std::vector<std::thread> make_secondary_displays(std::atomic<bool> &allstop);
 
 #if defined WINPLAT_WINDOWS && NDEBUG
@@ -20,7 +27,11 @@ int WinMain(HINSTANCE hinstance, HINSTANCE prev, PSTR cmd, int show)
 int main(int argc, char **argv)
 #endif
 {
+#ifdef ROLLDATA
+	win::AssetRoll roll(rolldata, sizeof(rolldata));
+#else
 	win::AssetRoll roll("ff.roll");
+#endif
 
 	// display setup
 	win::DisplayOptions display_options;
