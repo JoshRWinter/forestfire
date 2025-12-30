@@ -52,40 +52,51 @@ int main(int argc, char **argv)
 
 	std::atomic<bool> allstop = false;
 
-#if defined WINPLAT_WINDOWS && SCREENSAVER
+	bool previewing = false;
+
+#if defined (SCREENSAVER) && defined (WINPLAT_WINDOWS)
 	unsigned long long parentwindow = 0;
 
-#if defined NDEBUG
+#ifdef NDEBUG
 	const std::string cmdstring = cmd;
 	if (cmdstring.size() >= 4 && cmdstring.at(0) == '/' && cmdstring.at(1) == 'p' && cmdstring.at(2) == ' ')
 	{
+		previewing = true;
 		if (sscanf(cmdstring.substr(3).c_str(), "%llu", &parentwindow) != 1)
 			win::bug("Couldn't parse integer from " + cmdstring);
-
+	}
+	else if (cmdstring.size() >= 2 && cmdstring.at(0) == '/' && cmdstring.at(1) == 'c')
+	{
+		MessageBox(NULL, "No settings", "Nuffin'", MB_ICONINFORMATION);
+		return 0;
 	}
 #else
 	if (argc == 3 && !strcmp(argv[1], "/p"))
 	{
+		previewing = true;
 		if (sscanf(argv[2], "%llu", &parentwindow) != 1)
 			win::bug("Couldn't parse integer from " + std::string(argv[2]));
 	}
 #endif
+
+	std::vector<std::thread> secondary_displays;
 	if (parentwindow != 0)
 		display_options.parent = (HWND)parentwindow;
-
-	auto secondary_displays = make_secondary_displays(allstop);
+	else
+		secondary_displays = make_secondary_displays(allstop);
 #endif
 
 	win::Display display(display_options);
 	display.vsync(true);
 #ifdef SCREENSAVER
-	display.cursor(false);
+	if (!previewing)
+		display.cursor(false);
 #endif
 	bool fullscreen = display_options.fullscreen;
 
 	win::load_gl_functions();
 
-	display.register_button_handler([&allstop, &display, &fullscreen](win::Button button, bool press)
+	display.register_button_handler([&allstop, &display, &fullscreen, &previewing](win::Button button, bool press)
 	{
 		switch (button)
 		{
@@ -94,7 +105,7 @@ int main(int argc, char **argv)
 				break;
 #ifdef SCREENSAVER
 			default:
-				if (press)
+				if (press && !previewing)
 					allstop.store(true);
 				break;
 #else
@@ -122,14 +133,14 @@ int main(int argc, char **argv)
 
 #ifdef SCREENSAVER
 	int mousex = -1, mousey = -1;
-	display.register_mouse_handler([&allstop, &mousex, &mousey](int x, int y)
+	display.register_mouse_handler([&allstop, &mousex, &mousey, &previewing](int x, int y)
 	{
 		if (mousex == -1)
 		{
 			mousex = x;
 			mousey = y;
 		}
-		else if (x != mousex || y != mousey)
+		else if ((x != mousex || y != mousey) && !previewing)
 		{
 			allstop.store(true);
 		}
