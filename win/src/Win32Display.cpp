@@ -609,7 +609,6 @@ void Win32Display::update_refresh_rate()
 
 	if (monitor == NULL)
 	{
-		fprintf(stderr, "MonitorFromWindow() returned NULL\n");
 		rrate = 60.0f;
 		return;
 	}
