@@ -243,9 +243,10 @@ LRESULT CALLBACK Win32Display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 			display.button_handler(key, false);
 			return 0;
 		}
-		case WM_SYSCOMMAND:
-			if(wp != SC_KEYMENU)
-				return DefWindowProc(hwnd, msg, wp, lp);
+		//case WM_SYSCOMMAND:
+		//	if(wp != SC_KEYMENU)
+		//		return DefWindowProc(hwnd, msg, wp, lp);
+		//	break;
 		case WM_MOUSEMOVE:
 			display.mouse_handler(LOWORD(lp), HIWORD(lp));
 			return 0;
@@ -317,20 +318,24 @@ Win32Display::Win32Display(const DisplayOptions &options)
 
 	WNDCLASSEX wc;
 	wc.cbSize = sizeof(wc);
-	wc.style = CS_OWNDC;
-	wc.lpfnWndProc = wndproc;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.hInstance = GetModuleHandle(NULL);
-	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wc.lpszMenuName = NULL;
-	wc.lpszClassName = window_class;
-	wc.hIcon = icon;
-	wc.hIconSm = icon;
 
-	if(!RegisterClassEx(&wc))
-		win::bug("Could not register window class");
+	if (!GetClassInfoEx(GetModuleHandle(NULL), window_class, &wc))
+	{
+		wc.style = CS_OWNDC;
+		wc.lpfnWndProc = wndproc;
+		wc.cbClsExtra = 0;
+		wc.cbWndExtra = 0;
+		wc.hInstance = GetModuleHandle(NULL);
+		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+		wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+		wc.lpszMenuName = NULL;
+		wc.lpszClassName = window_class;
+		wc.hIcon = icon;
+		wc.hIconSm = icon;
+
+		if(!RegisterClassEx(&wc))
+			win::bug("Could not register window class " + std::to_string(GetLastError()));
+	}
 
 	if (monitors.count() == 0)
 		win::bug("No suitable monitors found.");

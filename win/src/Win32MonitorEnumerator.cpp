@@ -18,7 +18,7 @@ struct Win32MonitorInfo
 	bool primary;
 };
 
-static BOOL callback(HMONITOR monitor, HDC hdc, LPRECT rect, LPARAM lp)
+static BOOL __stdcall callback(HMONITOR monitor, HDC hdc, LPRECT rect, LPARAM lp)
 {
 	std::vector<Win32MonitorInfo>& v = *(std::vector<Win32MonitorInfo>*)lp;
 

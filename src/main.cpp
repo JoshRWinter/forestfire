@@ -1,13 +1,18 @@
 #include <chrono>
-#include <random>
+#include <atomic>
+#include <vector>
+#include <thread>
 
 #include <win/AssetRoll.hpp>
 #include <win/Display.hpp>
 #include <win/gl/GL.hpp>
 #include <win/Utility.hpp>
+#include <win/MonitorEnumerator.hpp>
 
 #include "Renderer.hpp"
 #include "SimulationSettings.hpp"
+
+std::vector<std::thread> make_secondary_displays(std::atomic<bool> &allstop);
 
 #if defined WINPLAT_WINDOWS && NDEBUG
 int WinMain(HINSTANCE hinstance, HINSTANCE prev, PSTR cmd, int show)
@@ -30,62 +35,95 @@ int main(int argc, char **argv)
 	display_options.fullscreen = true;
 	display_options.width = 1600;
 	display_options.height = 900;
-#ifdef WINPLAT_WINDOWS
-	{
-		const std::string cmdstring = cmd;
-		if (cmdstring.size() >= 4 && cmdstring.at(0) == '/' && cmdstring.at(1) == 'p' && cmdstring.at(2) == ' ')
-		{
-			unsigned long long u;
-			if (sscanf(cmdstring.substr(3).c_str(), "%llu", &u) != 1)
-				win::bug("Couldn't parse integer from " + cmdstring);
-
-			display_options.parent = (HWND)u;
-		}
-	}
-#endif
 #endif
 	display_options.gl_major = 4;
 	display_options.gl_minor = 6;
 
+	std::atomic<bool> allstop = false;
+
+#if defined WINPLAT_WINDOWS && SCREENSAVER
+	unsigned long long parentwindow = 0;
+
+#if defined NDEBUG
+	const std::string cmdstring = cmd;
+	if (cmdstring.size() >= 4 && cmdstring.at(0) == '/' && cmdstring.at(1) == 'p' && cmdstring.at(2) == ' ')
+	{
+		if (sscanf(cmdstring.substr(3).c_str(), "%llu", &parentwindow) != 1)
+			win::bug("Couldn't parse integer from " + cmdstring);
+
+	}
+#else
+	if (argc == 3 && !strcmp(argv[1], "/p"))
+	{
+		if (sscanf(argv[2], "%llu", &parentwindow) != 1)
+			win::bug("Couldn't parse integer from " + std::string(argv[2]));
+	}
+#endif
+	if (parentwindow != 0)
+		display_options.parent = (HWND)parentwindow;
+
+	auto secondary_displays = make_secondary_displays(allstop);
+#endif
+
 	win::Display display(display_options);
 	display.vsync(true);
-	// display.cursor(false);
+#ifdef SCREENSAVER
+	display.cursor(false);
+#endif
 	bool fullscreen = display_options.fullscreen;
 
 	win::load_gl_functions();
 
-	bool quit = false;
-	display.register_button_handler(
-		[&quit, &display, &fullscreen](win::Button button, bool press)
+	display.register_button_handler([&allstop, &display, &fullscreen](win::Button button, bool press)
+	{
+		switch (button)
 		{
-			switch (button)
-			{
-				case win::Button::esc:
-					if (press)
-						quit = true;
-					break;
-				case win::Button::f11:
-					if (press)
-					{
-						fullscreen = !fullscreen;
-						display.set_fullscreen(fullscreen);
-					}
-				case win::Button::space:
-					display.vsync(!press);
-					break;
-				default:
-					break;
+			case win::Button::space:
+				display.vsync(!press);
+				break;
+#ifdef SCREENSAVER
+			default:
+				if (press)
+					allstop.store(true);
+				break;
+#else
+			case win::Button::esc:
+				allstop = true;
+				break;
+			case win::Button::f11:
+				if (press)
+				{
+					fullscreen = !fullscreen;
+					display.set_fullscreen(fullscreen);
+				}
+			default:
+				break;
+#endif
 			}
 		});
 
 	display.register_window_handler(
-		[&quit](win::WindowEvent e)
+		[&allstop](win::WindowEvent e)
 		{
 			if (e == win::WindowEvent::close)
-				quit = true;
+				allstop = true;
 		});
 
-	display.register_mouse_handler([](int x, int y) {});
+#ifdef SCREENSAVER
+	int mousex = -1, mousey = -1;
+	display.register_mouse_handler([&allstop, &mousex, &mousey](int x, int y)
+	{
+		if (mousex == -1)
+		{
+			mousex = x;
+			mousey = y;
+		}
+		else if (x != mousex || y != mousey)
+		{
+			allstop.store(true);
+		}
+	});
+#endif
 
 	auto dims = win::Dimensions(display.width(), display.height());
 	Renderer renderer(roll, dims);
@@ -133,7 +171,7 @@ int main(int argc, char **argv)
 	auto last_fps = std::chrono::high_resolution_clock::now();
 	renderer.set_settings(settings);
 
-	while (!quit)
+	while (!allstop.load())
 	{
 		display.process();
 
@@ -143,7 +181,7 @@ int main(int argc, char **argv)
 		const auto now = std::chrono::high_resolution_clock::now();
 		if (std::chrono::duration<float>(now - last_fps).count() > 1.0f)
 		{
-			printf("%d fps\n", fps);
+			//printf("%d fps\n", fps);
 			fps = 0;
 			last_fps = now;
 		}
@@ -151,5 +189,75 @@ int main(int argc, char **argv)
 		display.swap();
 	}
 
+#ifdef SCREENSAVER
+	for (auto &t : secondary_displays)
+		t.join();
+#endif
+
 	return 0;
+}
+
+std::vector<std::thread> make_secondary_displays(std::atomic<bool> &allstop)
+{
+	auto callback = [](std::atomic<bool> &stop, std::string monitor)
+	{
+		win::DisplayOptions options;
+		options.monitor_name = monitor;
+		options.gl_major = 3;
+		options.gl_minor = 3;
+		options.fullscreen = true;
+		options.caption = "ForestFire";
+		options.caption = "ForestFire";
+
+		win::Display display(options);
+		display.cursor(false);
+
+		display.register_button_handler([&stop](win::Button button, bool press)
+		{
+			if (press)
+				stop.store(true);
+		});
+
+		display.register_window_handler(
+			[&stop](win::WindowEvent e)
+			{
+				if (e == win::WindowEvent::close)
+					stop.store(true);
+			});
+
+		int mousex = -1, mousey = -1;
+		display.register_mouse_handler([&stop, &mousex, &mousey](int x, int y)
+		{
+			if (mousex == -1)
+			{
+				mousex = x;
+				mousey = y;
+			}
+			else if (mousex != x || mousey != y)
+			{
+				stop.store(true);
+			}
+		});
+
+		glClearColor(0.0, 0.0, 0.0, 0.0);
+
+		while (!stop.load())
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			display.process();
+
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			display.swap();
+		}
+	};
+
+	std::vector<std::thread> threads;
+	win::MonitorEnumerator monitors;
+
+	for (const auto &m : monitors)
+		if (!m.primary)
+			threads.emplace_back(callback, std::ref(allstop), m.id);
+
+	return threads;
 }

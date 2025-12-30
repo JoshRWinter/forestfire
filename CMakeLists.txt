@@ -19,6 +19,10 @@ if (ROLLDATA)
 	add_compile_definitions(ROLLDATA=\"${path}\")
 endif ()
 
+if (SCREENSAVER)
+	add_compile_definitions(SCREENSAVER=1)
+endif()
+
 #if (WIN32)
 #	list(APPEND sources icon.rc)
 #endif ()
