@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <ctime>
 #include <random>
 
@@ -453,10 +454,29 @@ void Renderer::set_settings(const SimulationSettings &settings)
 
 std::unique_ptr<unsigned char[]> Renderer::generate_treegen_noise()
 {
+	unsigned long count = 0;
+
 	std::unique_ptr<unsigned char[]> data(new unsigned char[dims.width * dims.height]);
 	for (int i = 0; i < dims.width * dims.height; ++i)
 	{
 		data[i] = std::uniform_int_distribution<int>(0, 20'000)(mersenne) == 0 ? std::uniform_int_distribution<int>(100, 255)(mersenne) : 0;
+
+		if (data[i] > 0)
+			++count;
+	}
+
+	if (count < 3)
+	{
+		// small window dimensions, maybe no noise. just hard code some noise.
+		memset(data.get(), 0, dims.width * dims.height);
+
+		const int i1 = std::uniform_int_distribution<int>(0, (dims.width * dims.height) - 1)(mersenne);
+		const int i2 = std::uniform_int_distribution<int>(0, (dims.width * dims.height) - 1)(mersenne);
+		const int i3 = std::uniform_int_distribution<int>(0, (dims.width * dims.height) - 1)(mersenne);
+
+		data[i1] = 255;
+		data[i2] = 180;
+		data[i3] = 100;
 	}
 
 	return data;
