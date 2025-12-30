@@ -2,6 +2,8 @@
 
 #ifdef WINPLAT_WINDOWS
 
+#include <cmath>
+
 #include <dxgi.h>
 
 #include <win/Win32MonitorEnumerator.hpp>
