@@ -318,23 +318,27 @@ Win32Display::Win32Display(const DisplayOptions &options)
 
 	WNDCLASSEX wc;
 	wc.cbSize = sizeof(wc);
+	wc.style = CS_OWNDC;
+	wc.lpfnWndProc = wndproc;
+	wc.cbClsExtra = 0;
+	wc.cbWndExtra = 0;
+	wc.hInstance = GetModuleHandle(NULL);
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wc.lpszMenuName = NULL;
+	wc.lpszClassName = window_class;
+	wc.hIcon = icon;
+	wc.hIconSm = icon;
 
-	if (!GetClassInfoEx(GetModuleHandle(NULL), window_class, &wc))
+	if(!RegisterClassEx(&wc))
 	{
-		wc.style = CS_OWNDC;
-		wc.lpfnWndProc = wndproc;
-		wc.cbClsExtra = 0;
-		wc.cbWndExtra = 0;
-		wc.hInstance = GetModuleHandle(NULL);
-		wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-		wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-		wc.lpszMenuName = NULL;
-		wc.lpszClassName = window_class;
-		wc.hIcon = icon;
-		wc.hIconSm = icon;
-
-		if(!RegisterClassEx(&wc))
-			win::bug("Could not register window class " + std::to_string(GetLastError()));
+		if (GetLastError() == 1410) // already registered
+		{
+			if (!GetClassInfoEx(GetModuleHandle(NULL), window_class, &wc))
+			{
+				win::bug("Couldn't load existing window class: " + std::to_string(GetLastError()));
+			}
+		}
 	}
 
 	if (monitors.count() == 0)
