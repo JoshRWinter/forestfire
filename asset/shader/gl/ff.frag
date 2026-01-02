@@ -139,7 +139,7 @@ void main()
 
 		// make the trees twinkle
 		float twinkle_phase_shift = float(gl_FragCoord.x + gl_FragCoord.y);
-		float twinkle_freq = frame * (burning ? 0.06 : 0.01);
+		float twinkle_freq = frame * (burning ? 0.10 : 0.02);
 		float twinkle = abs(sin(twinkle_phase_shift + twinkle_freq));
 		twinkle = (twinkle * 0.85) + 0.15;
 		tree_visual = tree_visual.rgb * twinkle;

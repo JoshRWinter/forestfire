@@ -95,13 +95,15 @@ int main(int argc, char **argv)
 
 	win::load_gl_functions();
 
+	bool speedy = false;
 	display.register_button_handler(
-		[&allstop, &display, &fullscreen, &previewing](win::Button button, bool press)
+		[&allstop, &display, &fullscreen, &previewing, &speedy](win::Button button, bool press)
 		{
 			switch (button)
 			{
-				case win::Button::space:
+				case win::Button::lshift:
 					display.vsync(!press);
+					speedy = press;
 					break;
 #ifdef SCREENSAVER
 				default:
@@ -196,6 +198,9 @@ int main(int argc, char **argv)
 
 	while (!allstop.load())
 	{
+		if (!speedy)
+			std::this_thread::sleep_for(std::chrono::milliseconds((int)((1.0 / 29.0) * 1000)));
+
 		display.process();
 
 		renderer.draw();
