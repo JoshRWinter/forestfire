@@ -243,8 +243,10 @@ int main(int argc, char **argv)
 		display.swap();
 	}
 
+#ifdef WINPLAT_WINDOWS
 	if (wintimer != NULL)
 		CloseHandle(wintimer);
+#endif
 
 #ifdef SCREENSAVER
 	for (auto &t : secondary_displays)
