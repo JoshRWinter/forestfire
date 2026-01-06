@@ -95,6 +95,10 @@ int main(int argc, char **argv)
 
 	win::load_gl_functions();
 
+#ifdef WINPLAT_WINDOWS
+	HANDLE wintimer = CreateWaitableTimerExA(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+#endif
+
 	bool speedy = false;
 	display.register_button_handler(
 		[&allstop, &display, &fullscreen, &previewing, &speedy](win::Button button, bool press)
@@ -199,12 +203,33 @@ int main(int argc, char **argv)
 	while (!allstop.load())
 	{
 		if (!speedy)
+		{
+#ifdef WINPLAT_WINDOWS
+			if (wintimer != NULL)
+			{
+				const auto sleep_for_hnanos = (1.0f / 30.0f) * 10'000'000;
+				LARGE_INTEGER li;
+				li.QuadPart = -sleep_for_hnanos;
+
+				if (SetWaitableTimer(wintimer, &li, 0, NULL, NULL, FALSE))
+				{
+					WaitForSingleObject(wintimer, INFINITE);
+				}
+				else
+				{
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				}
+			}
+#else
 			std::this_thread::sleep_for(std::chrono::milliseconds((int)((1.0 / 29.0) * 1000)));
+#endif
+		}
 
 		display.process();
 
 		renderer.draw();
 
+#ifndef NDEBUG
 		++fps;
 		const auto now = std::chrono::high_resolution_clock::now();
 		if (std::chrono::duration<float>(now - last_fps).count() > 1.0f)
@@ -213,9 +238,13 @@ int main(int argc, char **argv)
 			fps = 0;
 			last_fps = now;
 		}
+#endif
 
 		display.swap();
 	}
+
+	if (wintimer != NULL)
+		CloseHandle(wintimer);
 
 #ifdef SCREENSAVER
 	for (auto &t : secondary_displays)
