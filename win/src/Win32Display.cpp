@@ -287,13 +287,13 @@ LRESULT CALLBACK Win32Display::wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 
 			if (w != 0 || h != 0)
 			{
-
 				if (display.window_prop_cache.w != w || display.window_prop_cache.h != h)
 				{
 					display.window_prop_cache.w = w;
 					display.window_prop_cache.h = h;
 
-					display.resize_handler(w, h);
+					display.resize_state.resize = true;
+					display.resize_state.time = std::chrono::steady_clock::now();
 				}
 			}
 
@@ -457,16 +457,16 @@ Win32Display::Win32Display(const DisplayOptions &options)
 
 	SetWindowText(window, options.caption.c_str());
 
-	ShowWindow(window, SW_SHOWDEFAULT);
-
 	RECT rect;
 	if (!GetClientRect(window, &rect))
 		win::bug("GetClientRect failure");
 
-	glViewport(0, 0, rect.right - rect.left, rect.bottom - rect.top);
-
 	window_prop_cache.w = rect.right - rect.left;
 	window_prop_cache.h = rect.bottom - rect.top;
+
+	ShowWindow(window, SW_SHOWDEFAULT);
+
+	glViewport(0, 0, rect.right - rect.left, rect.bottom - rect.top);
 
 	update_refresh_rate();
 }
@@ -480,6 +480,12 @@ Win32Display::~Win32Display()
 
 void Win32Display::process()
 {
+	if (resize_state.resize && std::chrono::duration<float>(std::chrono::steady_clock::now() - resize_state.time).count() > 0.25f)
+	{
+		resize_state.resize = false;
+		resize_handler(window_prop_cache.w, window_prop_cache.h);
+	}
+
 	MSG msg;
 
 	while(PeekMessage(&msg, window, 0, 0, PM_REMOVE))

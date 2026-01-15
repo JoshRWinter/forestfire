@@ -329,6 +329,12 @@ X11Display::~X11Display()
 
 void X11Display::process()
 {
+	if (resize_state.resized && std::chrono::duration<float>(std::chrono::steady_clock::now() - resize_state.time).count() > 0.25f)
+	{
+		resize_state.resized = false;
+		resize_handler(window_prop_cache.w, window_prop_cache.h);
+	}
+
 	while(XPending(xdisplay))
 	{
 		XEvent xevent;
@@ -404,12 +410,6 @@ void X11Display::process()
 				}
 				break;
 		}
-	}
-
-	if (resize_state.resized && std::chrono::duration<float>(std::chrono::steady_clock::now() - resize_state.time).count() > 0.25f)
-	{
-		resize_handler(window_prop_cache.w, window_prop_cache.h);
-		resize_state.resized = false;
 	}
 }
 
