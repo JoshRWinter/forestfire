@@ -353,7 +353,10 @@ void X11Display::process()
 					update_refresh_rate();
 
 				if (resized)
-					resize_handler(w, h);
+				{
+					resize_state.resized = true;
+					resize_state.time = std::chrono::steady_clock::now();
+				}
 
 				window_prop_cache.x = x;
 				window_prop_cache.y = y;
@@ -401,6 +404,12 @@ void X11Display::process()
 				}
 				break;
 		}
+	}
+
+	if (resize_state.resized && std::chrono::duration<float>(std::chrono::steady_clock::now() - resize_state.time).count() > 0.25f)
+	{
+		resize_handler(window_prop_cache.w, window_prop_cache.h);
+		resize_state.resized = false;
 	}
 }
 

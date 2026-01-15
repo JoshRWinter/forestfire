@@ -4,8 +4,10 @@
 
 #ifdef WINPLAT_LINUX
 
-#include <X11/Xlib.h>
+#include <chrono>
+
 #include <GL/glx.h>
+#include <X11/Xlib.h>
 
 #include <win/DisplayBase.hpp>
 
