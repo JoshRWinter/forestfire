@@ -54,6 +54,12 @@ private:
 		int x = 0, y = 0, w = 0, h = 0;
 	} window_prop_cache;
 
+	struct
+	{
+		bool resized = false;
+		std::chrono::time_point<std::chrono::steady_clock> time;
+	} resize_state;
+
 	float rrate = 60;
 };
 
