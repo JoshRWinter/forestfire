@@ -235,7 +235,7 @@ void Renderer::draw()
 			glUniform1f(ffmode.uniform_patternsqueeze, squeeze);
 		}
 
-		glUniform1ui(ffmode.uniform_frame, (frame++) % 3600);
+		glUniform1ui(ffmode.uniform_frame, (frame++) % 500'000);
 
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
